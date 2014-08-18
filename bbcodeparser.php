@@ -9,7 +9,6 @@
  *	------------
  *	Known bugs
  *	- The 'spaarders' are not being count correctly (so that has been remove from the output)
- *	- When someone rejoins the team, a bug occurs where everyone below that person is shown in red (-1 ranking) and no 'welcome back'-text is shown for that user.
  *
  *	------------
  *	Changelog
@@ -21,6 +20,7 @@
  *	2014-03-03: Fixed bug that caused new users not to be shown on the first day
  *	2014-06-?: Rank displaymode has been changed so the numbers are in a more logical order at the milestones.
  *	2014-06-09: turned off E_NOTICE error reports
+ *	2014-08-18: fixed bug where someone that rejoins the team would fuck up the rankings. Oh, and added a welcome back text.
  */
 
 error_reporting(E_ALL^E_NOTICE);
@@ -156,6 +156,15 @@ while($a = fetchAssoc($usersleft)) {
 	}
 }
 
+$usersreturned = q("SELECT * FROM `3_users` WHERE `status`='returned'");
+while ($a = fetchAssoc($usersreturned)) {
+    $tuser = fetchAssoc(q("SELECT * FROM `3_updates` WHERE `userid`=".$a['id']." ORDER BY `seqnum` DESC LIMIT 0,1")); 
+    $fixrank[$tuser['rank']] = $totalusers - $tuser['rank'] + 1;
+
+    for ($i=$tuser['rank'];$i<=$totalusers;$i++) {
+        $fixrank[$i]--;   
+    }
+}
 
 $stattimes = q("SELECT timestamp FROM `3_global` ORDER BY `timestamp` DESC");
 $statstill = fetchAssoc($stattimes)['timestamp'];
@@ -228,6 +237,9 @@ foreach($user as $k=>$v) {
 	if (($v['keys']-$v['keysdiff']) < $milestone[($curmilst)]['keyvalue'] and $curmilst > 0) {
 		echo '[img]'.$basedir.'rank_up.png[/img] ';
 	}
+    if ($v['status'] == 'returned') {
+        echo '[abbr=The prodigal son has returned!][green]';
+    }
 	echo '[nobbc]'.trim(str_replace(array("[nobbc]", "[/nobbc]"), array("[no[b][/b]bbc]", "[/no[b][/b]bbc]"), $v['username']).' [/nobbc][/td][td]'.formatNumber($v['keys']));
 	if ($v['keysdiff'] > 0) {
 		$teamstats['memberspulsed']++;
@@ -288,10 +300,13 @@ foreach($user as $k=>$v) {
 echo '<br /><br />';
 
 // Get users who joined or left the team
-$leftjoined = q("SELECT * FROM `3_users` WHERE `status`='just-joined' OR `status`='just-left'");
+$leftjoined = q("SELECT * FROM `3_users` WHERE `status`='just-joined' OR `status`='just-left' OR `status`='returned'");
 while($a = fetchAssoc($leftjoined)) {
 	if ($a['status'] == 'just-joined') {
 		echo 'Welkom '.trim(str_ireplace($teamtag, '', $a['username'])).'! :D';
+	}
+	elseif ($a['status'] == 'returned') {
+		echo 'Welkom terug '.trim(str_ireplace($teamtag, '', $a['username'])).'! :D';
 	}
 	else {
 		echo trim(str_ireplace($teamtag, '', $a['username'])).' heeft besloten ons te verlaten :(';

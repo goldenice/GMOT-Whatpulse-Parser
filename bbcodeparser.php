@@ -328,5 +328,5 @@ echo '[tr][td]Upload [/td][td]'.generateBandwidth($teamstats['upload']).'[/td][t
 echo '[/table]';
 
 echo '<br /><br />';
-echo '[url='.$scripturl.']Deze statistieken[/url] ([url='.$scripturl.'?source]Broncode[/url])';
+echo '[url='.$scripturl.']Deze statistieken[/url] ([url=https://github.com/goldenice/GMOT-Whatpulse-Parser]Broncode[/url])';
 exit();

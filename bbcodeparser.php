@@ -179,7 +179,7 @@ if (date('z', $statstill) % 2 == 0) {		// If day of the year is even...
 }
 else {
 	$thirdstat = 'network';
-	$thirdstath = 'Download';
+	$thirdstath = '[abbr=Upload]Download[/abbr]';
 }
 
 // Milestone stuff
@@ -282,7 +282,8 @@ foreach($user as $k=>$v) {
 		}
 	}
 	else {
-		echo generateBandwidth($v['download']);
+		$downstr = generateBandwidth($v['download']);
+		$upstr = generateBandwidth($v['upload']);
 		if ($v['downloaddiff'] > 0 or $v['uploaddiff'] > 0) {
 			if ($v['downloaddiff'] == $highestpulse['download']['count']) {
 				$btag = '[blue]';
@@ -292,8 +293,10 @@ foreach($user as $k=>$v) {
 				$btag = '[green]';
 				$etag = '[/green]';
 			}
-			echo ' '.$btag.'[abbr=upload: +'.generateBandwidth($v['uploaddiff']).']+'.generateBandwidth($v['downloaddiff']).'[/abbr]'.$etag;
+			$downstr .= ' '.$btag.'+'.generateBandwidth($v['downloaddiff']).$etag;
+			$upstr .= ' +'.generateBandwidth($v['uploaddiff']);
 		}
+		echo '[abbr='.$upstr.']'.$downstr.'[/abbr]';
 	}
 	echo '[/td][/tr]';
 }

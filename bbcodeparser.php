@@ -292,7 +292,7 @@ foreach($user as $k=>$v) {
 				$btag = '[green]';
 				$etag = '[/green]';
 			}
-			echo ' '.$btag.'+'.generateBandwidth($v['downloaddiff']).$etag;
+			echo ' '.$btag.'[abbr=upload: +'.generateBandwidth($v['uploaddiff']).']+'.generateBandwidth($v['downloaddiff']).'[/abbr]'.$etag;
 		}
 	}
 	echo '[/td][/tr]';

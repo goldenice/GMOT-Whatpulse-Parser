@@ -23,10 +23,10 @@ SCRIPT="./bbcodegenerator.php"
 echo "Script controleren..." > /dev/stderr
 if [[ ! -f "$SCRIPT" ]]; then
     echo "Kan het script niet vinden!" > /dev/stderr
-    echo "Heb je dit script wellicht niet in de goede map gezet?" > /dev/stder
+    echo "Heb je dit script wellicht niet in de goede map gezet?" > /dev/stderr
     exit 1
 fi
 echo "Script uitvoeren..." > /dev/stderr
 echo > /dev/stderr
-php $SCRIPT > stats.txt
+$PHP $SCRIPT > stats.txt
 echo "Als het goed is staan de statistieken in stats.txt!" > /dev/stderr

@@ -26,9 +26,10 @@
  */
 
 # Defines
-define('ROOT',      dirname(__FILE__));
-define('ENDL',      "\r\n");
-define('DEVMODE',   false);
+define('ROOT',              dirname(__FILE__));
+define('ENDL',              "\r\n");
+define('DEVMODE',           false);
+define('SECONDS_PER_DAY',   86400);
 
 # PHP and content settings
 $starttime      = microtime(true);
@@ -72,16 +73,31 @@ $basedir 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats';
 # --------------------------------------------------------------------------------------------------------------------
 # Let's start by gathering information!
 #
-# 1. select all (per-user) data we need to build the scoreboard
-# 2. calculate totals and rank offsets
-# 3. determine which users have joined/left/returned
-# 4. gather some global stats
+# 1. gather some global stats
+# 2. select all (per-user) data we need to build the scoreboard
+# 3. calculate totals and rank offsets
+# 4. determine which users have joined/left/returned
 # --------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------
 
 
 
+// stat timestamps (from - till)
+$sql = '
+SELECT
+    timestamp
+FROM
+    `3_global`
+ORDER BY
+    `timestamp` DESC
+LIMIT 2;';
+
+$result = $db->query($sql);
+$statsDateTill = $result->fetch_row()[0];
+$statsDateFrom = $result->fetch_row()[0];
+
+// userdata
 $sql = '
 SELECT
     users.username,
@@ -102,10 +118,7 @@ SELECT
     today.upload    - yesterday.upload      AS `uploaddiff`,
     today.download  - yesterday.download    AS `downloaddiff`,
     today.uptime    - yesterday.uptime      AS `uptimediff`,
-    CASE WHEN (daybefore.keys = yesterday.keys AND yesterday.keys != today.keys)
-        THEN 1
-        ELSE 0
-    END AS `saver`
+    yesterday.lastpulse
 FROM
     3_users AS users
 LEFT JOIN 3_updates AS today
@@ -113,9 +126,6 @@ LEFT JOIN 3_updates AS today
 LEFT JOIN 3_updates AS yesterday
     ON yesterday.userid = today.userid
     AND yesterday.seqnum = today.seqnum - 1
-LEFT JOIN 3_updates AS daybefore
-    ON daybefore.userid = today.userid
-    AND daybefore.seqnum = today.seqnum - 2
 WHERE
     users.status != \'ex-member\'
     AND today.seqnum = (SELECT MAX(seqnum) FROM 3_updates)
@@ -133,6 +143,13 @@ $users = array();
 $rankDelta = 0;
 
 while ($userData = $result->fetch_assoc()) {
+    
+    // get amount of days since the last pulse that is not the pulse of today (yesterday.lastpulse),
+    // will be 1 if pulsed yesterday and today, 2 if last pulsed the day before yesterday and today, etc. etc.
+    // might be a little bit unstable if the $statsDayFrom/Till timestamps are not exactly SECONDS_PER_DAY seconds
+    // difference and the user pulses around 4:00 AM, but we can live with that (go ahead if you see a better solution).
+    $userData['saverdays'] = max(0, ceil( ($statsDateFrom - $userData['lastpulse']) / SECONDS_PER_DAY ));
+    $userData['saver'] = ($userData['saverdays'] > 1);
     
     if ($userData['status'] == 'just-joined' || $userData['status'] == 'returned') {
         
@@ -153,26 +170,12 @@ while ($userData = $result->fetch_assoc()) {
         $users[] = new User($userData, $rankDelta);
         
     }
+    
 }
 
 // user that just left have a negative diff (because they had NULL today and a value yesterday)
 // so the math should be correct.. (right?)
 // while we're iterating through the users, also record events (users joining, leaving, etc.)
-// and for the savers, find out what the last day was they pulsed!
-
-$sql = '
-SELECT
-    (SELECT MAX(seqnum) FROM 3_updates) - lastupdate.seqnum AS `days`
-FROM
-    3_updates AS lastupdate
-WHERE
-    lastupdate.seqnum < (SELECT MAX(seqnum) FROM 3_updates)
-    AND lastupdate.userid = ?
-ORDER BY
-    lastupdate.seqnum DESC
-LIMIT 1;';
-
-$stmt = $db->prepare($sql);
 
 $events = array();
 $statkeys = array('keys', 'clicks', 'upload', 'download', 'uptime');
@@ -211,35 +214,10 @@ foreach ($users as $user) {
     }
     
     // get saver days if the user is a saver
-    if ($stmt) {
-        if ($user->isSaver()) {
-            $userId = $user->getRawData('userid');
-            $stmt->bind_param('i', $userId);
-            $stmt->execute();
-            $stmt->bind_result($days);
-            if ($stmt->fetch()) {
-                $user->setRawData('saverdays', $days + 1); // +1, also this day
-            }
-            $totals['savers'] += 1;
-        }
+    if ($user->isSaver() && $user->hasPulsed()) {
+        $totals['savers'] += 1;
     }
 }
-
-$stmt->close();
-
-// stat timestamps (from - till)
-$sql = '
-SELECT
-    timestamp
-FROM
-    `3_global`
-ORDER BY
-    `timestamp` DESC
-LIMIT 2;';
-
-$result = $db->query($sql);
-$statsDateTill = $result->fetch_row()[0];
-$statsDateFrom = $result->fetch_row()[0];
 
 
 
@@ -380,9 +358,10 @@ foreach ($users as $user) {
         $saverdays = $user->getRawData('saverdays');
         $prefix = '';
         
+        // cannot use StatNumber inside [abbr] tag
         if ($saverdays > 1) {
-            $prefix .= '[abbr=Verdeeld over ' . Format::StatNumber($saverdays) . ' dagen,';
-            $prefix .= 'gemiddeld ' . Format::StatNumber($keysdiff / $saverdays) . ' keys per dag]';
+            $prefix .= '[abbr=Verdeeld over ' . Format::Number($saverdays) . ' dagen, ';
+            $prefix .= 'gemiddeld ' . Format::Number($keysdiff / $saverdays) . ' keys per dag]';
         }
         
         if ($keysdiff == $highest['keysdiff']) {

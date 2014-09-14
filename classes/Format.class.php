@@ -40,12 +40,13 @@ class Format {
             'juni',
             'juli',
             'augustus',
+            'september',
             'oktober',
             'november',
             'december'
         );
         
-        return $dagen[date('w', $timestamp)] . date(' j ', $timestamp) . $maanden[date('n', $timestamp) - 1] . date(' Y', $timestamp); 
+        return $dagen[date('N', $timestamp) - 1] . date(' j ', $timestamp) . $maanden[date('n', $timestamp) - 1] . date(' Y', $timestamp); 
     }
     
     static function Number($number) {

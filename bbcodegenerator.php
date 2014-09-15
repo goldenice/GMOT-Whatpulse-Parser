@@ -91,11 +91,12 @@ FROM
     `3_global`
 ORDER BY
     `timestamp` DESC
-LIMIT 2;';
+LIMIT 3;';
 
 $result = $db->query($sql);
 $statsDateTill = $result->fetch_row()[0];
 $statsDateFrom = $result->fetch_row()[0];
+$statsDateYesterday = $result->fetch_row()[0];
 
 // userdata
 $sql = '
@@ -138,12 +139,10 @@ $rankDelta = 0;
 
 while ($userData = $result->fetch_assoc()) {
     
-    // get amount of days since the last pulse that is not the pulse of today (yesterday.lastpulse),
-    // will be 1 if pulsed yesterday and today, 2 if last pulsed the day before yesterday and today, etc. etc.
-    // might be a little bit unstable if the $statsDayFrom/Till timestamps are not exactly SECONDS_PER_DAY seconds
-    // difference and the user pulses around 4:00 AM, but we can live with that (go ahead if you see a better solution).
+    // Get the amount of days since the last pulse that is not the pulse of today (yesterday.lastpulse)
     $userData['saverdays'] = max(0, ceil( ($statsDateFrom - $userData['lastpulse']) / SECONDS_PER_DAY ));
-    $userData['saver'] = ($userData['saverdays'] > 1);
+    // Someone's considdered a saver if yesterday.lastpulse was not yesterday.
+    $userData['saver'] = ($userData['lastpulse'] < $statsDateYesterday);
     
     
     if ($userData['status'] == 'just-joined' || $userData['status'] == 'returned') {

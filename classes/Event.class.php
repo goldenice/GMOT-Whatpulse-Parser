@@ -6,14 +6,14 @@
 
 class Event {
     private $message;
-    private $username;
+    private $user;
     
-    public function __construct($message, $username) {
+    public function __construct($message, $user) {
         $this->message = $message;
-        $this->username = $username;
+        $this->user = $user;
     }
     
     public function getString() {
-        return sprintf($this->message, $this->username);
+        return sprintf($this->message, $this->user->getUsername());
     }
 }

@@ -28,7 +28,7 @@
 # Defines
 define('ROOT',              dirname(__FILE__));
 define('ENDL',              "\r\n");
-define('DEVMODE',           false);
+define('DEVMODE',           true);
 define('SECONDS_PER_DAY',   86400);
 
 # PHP and content settings
@@ -193,13 +193,13 @@ foreach ($users as $user) {
     
     switch($user->getRawData('status')) {
         case 'just-joined':
-            $events[] = new Event($user->getUsername(), 'Welkom %s! :D');
+            $events[] = new Event('Welkom %s! :D', $user);
             break;
         case 'returned':
-            $events[] = new Event($user->getUsername(), 'Welkom terug %s! :D');
+            $events[] = new Event('Welkom terug %s! :D', $user);
             break;
         case 'just-left':
-            $events[] = new Event($user->getUsername(), '%s heeft besloten ons te verlaten :(');
+            $events[] = new Event('%s heeft besloten ons te verlaten :(', $user);
             break;
     }
     
@@ -441,7 +441,11 @@ echo '[/table]' . ENDL . ENDL;
 // display events
 
 foreach ($events as $event) {
-    echo $event->toString() . ENDL;
+    echo $event->getString() . ENDL;
+}
+
+if (count($events) > 0) {
+    echo ENDL;
 }
 
 // display totals

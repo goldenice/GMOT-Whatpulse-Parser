@@ -63,7 +63,7 @@ $db = new mysqli($dbhost, $dbuser, $dbpass, $dbname, $dbport);
 
 # Script Settings
 $teamtag 		= '[GMOT]'; // important for removing the team tag from the username.
-$scripturl 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodeparser.php';
+$scripturl 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodegenerator.php';
 $basedir 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats';
 
 

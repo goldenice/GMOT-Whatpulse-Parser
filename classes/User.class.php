@@ -19,7 +19,14 @@ class User {
     
     public function isSaver() {
         if (isset($this->data['saver'])) {
-            return ($this->data['saver'] == 1);
+            return ($this->data['saver']);
+        }
+        return false;
+    }
+    
+    public function hasPulsed() {
+        if (isset($this->data['keysdiff']) && isset($this->data['clicksdiff'])) {
+            return ($this->data['keysdiff'] != 0 || $this->data['clicksdiff'] != 0);
         }
         return false;
     }
@@ -52,7 +59,7 @@ class User {
     
     public function isActive() {
         if (isset($this->data['status'])) {
-            return ($this->data['status'] != 'ex-member');
+            return ($this->data['status'] != 'ex-member' && $this->data['status'] != 'just-left');
         }
         return false;
     }

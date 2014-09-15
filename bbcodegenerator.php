@@ -26,9 +26,10 @@
  */
 
 # Defines
-define('ROOT',      dirname(__FILE__));
-define('ENDL',      "\r\n");
-define('DEVMODE',   false);
+define('ROOT',              dirname(__FILE__));
+define('ENDL',              "\r\n");
+define('DEVMODE',           false);
+define('SECONDS_PER_DAY',   86400);
 
 # PHP and content settings
 $starttime      = microtime(true);
@@ -62,7 +63,7 @@ $db = new mysqli($dbhost, $dbuser, $dbpass, $dbname, $dbport);
 
 # Script Settings
 $teamtag 		= '[GMOT]'; // important for removing the team tag from the username.
-$scripturl 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodeparser.php';
+$scripturl 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodegenerator.php';
 $basedir 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats';
 
 
@@ -72,26 +73,38 @@ $basedir 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats';
 # --------------------------------------------------------------------------------------------------------------------
 # Let's start by gathering information!
 #
-# 1. select all (per-user) data we need to build the scoreboard
-# 2. calculate totals and rank offsets
-# 3. determine which users have joined/left/returned
-# 4. gather some global stats
+# 1. gather some global stats
+# 2. select all (per-user) data we need to build the scoreboard
+# 3. calculate totals and rank offsets
+# 4. determine which users have joined/left/returned
 # --------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------
 
 
 
+// stat timestamps (from - till)
+$sql = '
+SELECT
+    timestamp
+FROM
+    `3_global`
+ORDER BY
+    `timestamp` DESC
+LIMIT 2;';
+
+$result = $db->query($sql);
+$statsDateTill = $result->fetch_row()[0];
+$statsDateFrom = $result->fetch_row()[0];
+
+// userdata
 $sql = '
 SELECT
     users.username,
     users.status,
     today.userid,
     today.rank,
-    CASE WHEN yesterday.rank IS NOT NULL
-        THEN yesterday.rank
-        ELSE (SELECT COUNT(*) FROM 3_users WHERE status != \'ex-member\')
-    END AS `oldrank`,
+    yesterday.rank AS `oldrank`,
     today.keys,
     today.clicks,
     today.upload,
@@ -102,30 +115,21 @@ SELECT
     today.upload    - yesterday.upload      AS `uploaddiff`,
     today.download  - yesterday.download    AS `downloaddiff`,
     today.uptime    - yesterday.uptime      AS `uptimediff`,
-    CASE WHEN (daybefore.keys = yesterday.keys AND yesterday.keys != today.keys)
-        THEN 1
-        ELSE 0
-    END AS `saver`
+    yesterday.lastpulse
 FROM
     3_users AS users
 LEFT JOIN 3_updates AS today
     ON today.userid = users.id
+    AND today.seqnum = (SELECT MAX(seqnum) FROM 3_updates)
 LEFT JOIN 3_updates AS yesterday
-    ON yesterday.userid = today.userid
-    AND yesterday.seqnum = today.seqnum - 1
-LEFT JOIN 3_updates AS daybefore
-    ON daybefore.userid = today.userid
-    AND daybefore.seqnum = today.seqnum - 2
+    ON yesterday.userid = users.id
+    AND yesterday.seqnum = (SELECT MAX(seqnum) FROM 3_updates) - 1
 WHERE
     users.status != \'ex-member\'
-    AND today.seqnum = (SELECT MAX(seqnum) FROM 3_updates)
 GROUP BY
     users.username
 ORDER BY
-    CASE WHEN today.rank IS NOT NULL 
-        THEN today.rank
-        ELSE yesterday.rank
-    END ASC;';
+    IFNULL(today.rank, yesterday.rank) ASC;';
     
 $result = $db->query($sql);
 
@@ -133,6 +137,14 @@ $users = array();
 $rankDelta = 0;
 
 while ($userData = $result->fetch_assoc()) {
+    
+    // get amount of days since the last pulse that is not the pulse of today (yesterday.lastpulse),
+    // will be 1 if pulsed yesterday and today, 2 if last pulsed the day before yesterday and today, etc. etc.
+    // might be a little bit unstable if the $statsDayFrom/Till timestamps are not exactly SECONDS_PER_DAY seconds
+    // difference and the user pulses around 4:00 AM, but we can live with that (go ahead if you see a better solution).
+    $userData['saverdays'] = max(0, ceil( ($statsDateFrom - $userData['lastpulse']) / SECONDS_PER_DAY ));
+    $userData['saver'] = ($userData['saverdays'] > 1);
+    
     
     if ($userData['status'] == 'just-joined' || $userData['status'] == 'returned') {
         
@@ -144,7 +156,7 @@ while ($userData = $result->fetch_assoc()) {
     } else if ($userData['status'] == 'just-left') {
         
         // if the user has been removed from the scoreboard, the rank offset is decreased for the following users.
-        $users[] = new User($userData, $rankData);
+        $users[] = new User($userData, $rankDelta);
         $rankDelta -= 1;
         
     } else {
@@ -153,26 +165,12 @@ while ($userData = $result->fetch_assoc()) {
         $users[] = new User($userData, $rankDelta);
         
     }
+    
 }
 
 // user that just left have a negative diff (because they had NULL today and a value yesterday)
 // so the math should be correct.. (right?)
 // while we're iterating through the users, also record events (users joining, leaving, etc.)
-// and for the savers, find out what the last day was they pulsed!
-
-$sql = '
-SELECT
-    (SELECT MAX(seqnum) FROM 3_updates) - lastupdate.seqnum AS `days`
-FROM
-    3_updates AS lastupdate
-WHERE
-    lastupdate.seqnum < (SELECT MAX(seqnum) FROM 3_updates)
-    AND lastupdate.userid = ?
-ORDER BY
-    lastupdate.seqnum DESC
-LIMIT 1;';
-
-$stmt = $db->prepare($sql);
 
 $events = array();
 $statkeys = array('keys', 'clicks', 'upload', 'download', 'uptime');
@@ -195,13 +193,13 @@ foreach ($users as $user) {
     
     switch($user->getRawData('status')) {
         case 'just-joined':
-            $events[] = new Event($user->getUsername(), 'Welkom %s! :D');
+            $events[] = new Event('Welkom %s! :D', $user);
             break;
         case 'returned':
-            $events[] = new Event($user->getUsername(), 'Welkom terug %s! :D');
+            $events[] = new Event('Welkom terug %s! :D', $user);
             break;
         case 'just-left':
-            $events[] = new Event($user->getUsername(), '%s heeft besloten ons te verlaten :(');
+            $events[] = new Event('%s heeft besloten ons te verlaten :(', $user);
             break;
     }
     
@@ -211,35 +209,10 @@ foreach ($users as $user) {
     }
     
     // get saver days if the user is a saver
-    if ($stmt) {
-        if ($user->isSaver()) {
-            $userId = $user->getRawData('userid');
-            $stmt->bind_param('i', $userId);
-            $stmt->execute();
-            $stmt->bind_result($days);
-            if ($stmt->fetch()) {
-                $user->setRawData('saverdays', $days + 1); // +1, also this day
-            }
-            $totals['savers'] += 1;
-        }
+    if ($user->isSaver() && $user->hasPulsed()) {
+        $totals['savers'] += 1;
     }
 }
-
-$stmt->close();
-
-// stat timestamps (from - till)
-$sql = '
-SELECT
-    timestamp
-FROM
-    `3_global`
-ORDER BY
-    `timestamp` DESC
-LIMIT 2;';
-
-$result = $db->query($sql);
-$statsDateTill = $result->fetch_row()[0];
-$statsDateFrom = $result->fetch_row()[0];
 
 
 
@@ -291,12 +264,14 @@ $milestoneIndex = -1;
 $milestonePrint = true;
 
 if (count($users) > 0) {
-    do {
+    
+    while ($milestones[$milestoneIndex+1]['keyvalue'] > $users[0]->getRawData('keys') && $milestoneIndex < count($milestones) - 2) {
         $milestoneIndex += 1;
-    } while ($milestones[$milestoneIndex]['keyvalue'] > $users[0]->getRawData('keys') && $milestoneIndex < count($milestones) - 1);
+    }
     
 } else {
     $milestoneIndex = count($milestones) - 1;
+    $milestonePrint = false;
 }
 
 // message heading
@@ -315,9 +290,11 @@ foreach ($users as $user) {
     if (!$user->isActive()) { continue; }
     
     // determine if we need to print another milestone
-    if ($milestones[$milestoneIndex]['keyvalue'] > $user->getRawData('keys') && $milestoneIndex < count($milestones) - 1) {
-        $milestoneIndex += 1;
-        $milestonePrint = true;
+    if ($milestoneIndex < count($milestones) - 1) {
+        while ($milestones[$milestoneIndex+1]['keyvalue'] > $user->getRawData('keys') && $milestoneIndex < count($milestones) - 1) {
+            $milestoneIndex += 1;
+            $milestonePrint = true;
+        }
     }
     
     // print a milestone if we have to
@@ -339,10 +316,10 @@ foreach ($users as $user) {
     $rankdiff = $user->getRankDiff();
     
     // red or green text when rank has changed
-    if ($rankdiff > 0) {
-        echo '[green][abbr=+' . Format::Number($rankdiff) . ']'; 
-    } elseif ($rankdiff < 0) {
-        echo '[red][abbr=' . Format::Number($rankdiff) . ']';
+    if ($rankdiff < 0) {
+        echo '[green][abbr=+' . Format::Number(-$rankdiff) . ']'; 
+    } elseif ($rankdiff > 0) {
+        echo '[red][abbr=-' . Format::Number($rankdiff) . ']';
     }
     echo $rank . '[/td]';
     
@@ -380,9 +357,10 @@ foreach ($users as $user) {
         $saverdays = $user->getRawData('saverdays');
         $prefix = '';
         
+        // cannot use StatNumber inside [abbr] tag
         if ($saverdays > 1) {
-            $prefix .= '[abbr=Verdeeld over ' . Format::StatNumber($saverdays) . ' dagen,';
-            $prefix .= 'gemiddeld ' . Format::StatNumber($keysdiff / $saverdays) . ' keys per dag]';
+            $prefix .= '[abbr=Verdeeld over ' . Format::Number($saverdays) . ' dagen, ';
+            $prefix .= 'gemiddeld ' . Format::Number($keysdiff / $saverdays) . ' keys per dag]';
         }
         
         if ($keysdiff == $highest['keysdiff']) {
@@ -450,7 +428,7 @@ foreach ($users as $user) {
                 $prefix = ' [green]';
             }
             echo Format::Bandwidth($user->getRawData('download'));
-            echo $prefix . '+' . $downloaddiff;
+            echo $prefix . '+' . Format::Bandwidth($downloaddiff);
         }
     }
     
@@ -467,7 +445,11 @@ echo '[/table]' . ENDL . ENDL;
 // display events
 
 foreach ($events as $event) {
-    echo $event->toString() . ENDL;
+    echo $event->getString() . ENDL;
+}
+
+if (count($events) > 0) {
+    echo ENDL;
 }
 
 // display totals

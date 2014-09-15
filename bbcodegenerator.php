@@ -264,12 +264,14 @@ $milestoneIndex = -1;
 $milestonePrint = true;
 
 if (count($users) > 0) {
-    do {
+    
+    while ($milestones[$milestoneIndex+1]['keyvalue'] > $users[0]->getRawData('keys') && $milestoneIndex < count($milestones) - 2) {
         $milestoneIndex += 1;
-    } while ($milestones[$milestoneIndex]['keyvalue'] > $users[0]->getRawData('keys') && $milestoneIndex < count($milestones) - 1);
+    }
     
 } else {
     $milestoneIndex = count($milestones) - 1;
+    $milestonePrint = false;
 }
 
 // message heading
@@ -288,9 +290,11 @@ foreach ($users as $user) {
     if (!$user->isActive()) { continue; }
     
     // determine if we need to print another milestone
-    while ($milestones[$milestoneIndex]['keyvalue'] > $user->getRawData('keys') && $milestoneIndex < count($milestones) - 1) {
-        $milestoneIndex += 1;
-        $milestonePrint = true;
+    if ($milestoneIndex < count($milestones) - 1) {
+        while ($milestones[$milestoneIndex+1]['keyvalue'] > $user->getRawData('keys') && $milestoneIndex < count($milestones) - 1) {
+            $milestoneIndex += 1;
+            $milestonePrint = true;
+        }
     }
     
     // print a milestone if we have to
@@ -424,7 +428,7 @@ foreach ($users as $user) {
                 $prefix = ' [green]';
             }
             echo Format::Bandwidth($user->getRawData('download'));
-            echo $prefix . '+' . $downloaddiff;
+            echo $prefix . '+' . Format::Bandwidth($downloaddiff);
         }
     }
     

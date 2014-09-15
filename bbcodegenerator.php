@@ -28,7 +28,7 @@
 # Defines
 define('ROOT',              dirname(__FILE__));
 define('ENDL',              "\r\n");
-define('DEVMODE',           true);
+define('DEVMODE',           false);
 define('SECONDS_PER_DAY',   86400);
 
 # PHP and content settings
@@ -156,7 +156,7 @@ while ($userData = $result->fetch_assoc()) {
     } else if ($userData['status'] == 'just-left') {
         
         // if the user has been removed from the scoreboard, the rank offset is decreased for the following users.
-        $users[] = new User($userData, $rankData);
+        $users[] = new User($userData, $rankDelta);
         $rankDelta -= 1;
         
     } else {

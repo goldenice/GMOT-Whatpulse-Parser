@@ -104,10 +104,7 @@ SELECT
     users.status,
     today.userid,
     today.rank,
-    CASE WHEN yesterday.rank IS NOT NULL
-        THEN yesterday.rank
-        ELSE (SELECT COUNT(*) FROM 3_users WHERE status != \'ex-member\')
-    END AS `oldrank`,
+    yesterday.rank AS `oldrank`,
     today.keys,
     today.clicks,
     today.upload,
@@ -123,19 +120,16 @@ FROM
     3_users AS users
 LEFT JOIN 3_updates AS today
     ON today.userid = users.id
+    AND today.seqnum = (SELECT MAX(seqnum) FROM 3_updates)
 LEFT JOIN 3_updates AS yesterday
-    ON yesterday.userid = today.userid
-    AND yesterday.seqnum = today.seqnum - 1
+    ON yesterday.userid = users.id
+    AND yesterday.seqnum = (SELECT MAX(seqnum) FROM 3_updates) - 1
 WHERE
     users.status != \'ex-member\'
-    AND today.seqnum = (SELECT MAX(seqnum) FROM 3_updates)
 GROUP BY
     users.username
 ORDER BY
-    CASE WHEN today.rank IS NOT NULL 
-        THEN today.rank
-        ELSE yesterday.rank
-    END ASC;';
+    IFNULL(today.rank, yesterday.rank) ASC;';
     
 $result = $db->query($sql);
 
@@ -150,6 +144,7 @@ while ($userData = $result->fetch_assoc()) {
     // difference and the user pulses around 4:00 AM, but we can live with that (go ahead if you see a better solution).
     $userData['saverdays'] = max(0, ceil( ($statsDateFrom - $userData['lastpulse']) / SECONDS_PER_DAY ));
     $userData['saver'] = ($userData['saverdays'] > 1);
+    
     
     if ($userData['status'] == 'just-joined' || $userData['status'] == 'returned') {
         
@@ -293,7 +288,7 @@ foreach ($users as $user) {
     if (!$user->isActive()) { continue; }
     
     // determine if we need to print another milestone
-    if ($milestones[$milestoneIndex]['keyvalue'] > $user->getRawData('keys') && $milestoneIndex < count($milestones) - 1) {
+    while ($milestones[$milestoneIndex]['keyvalue'] > $user->getRawData('keys') && $milestoneIndex < count($milestones) - 1) {
         $milestoneIndex += 1;
         $milestonePrint = true;
     }
@@ -317,10 +312,10 @@ foreach ($users as $user) {
     $rankdiff = $user->getRankDiff();
     
     // red or green text when rank has changed
-    if ($rankdiff > 0) {
-        echo '[green][abbr=+' . Format::Number($rankdiff) . ']'; 
-    } elseif ($rankdiff < 0) {
-        echo '[red][abbr=' . Format::Number($rankdiff) . ']';
+    if ($rankdiff < 0) {
+        echo '[green][abbr=+' . Format::Number(-$rankdiff) . ']'; 
+    } elseif ($rankdiff > 0) {
+        echo '[red][abbr=-' . Format::Number($rankdiff) . ']';
     }
     echo $rank . '[/td]';
     

@@ -59,7 +59,7 @@ class User {
     
     public function isActive() {
         if (isset($this->data['status'])) {
-            return ($this->data['status'] != 'ex-member');
+            return ($this->data['status'] != 'ex-member' && $this->data['status'] != 'just-left');
         }
         return false;
     }

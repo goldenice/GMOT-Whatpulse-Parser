@@ -105,7 +105,15 @@ SELECT
     users.status,
     today.userid,
     today.rank,
-    yesterday.rank AS `oldrank`,
+    IFNULL(
+        yesterday.rank,
+        ( SELECT t.rank
+        FROM 3_updates AS t
+        WHERE t.userid = today.userid
+        AND t.seqnum < today.seqnum
+        ORDER BY t.seqnum DESC
+        LIMIT 1)
+    ) AS `oldrank`,
     today.keys,
     today.clicks,
     today.upload,

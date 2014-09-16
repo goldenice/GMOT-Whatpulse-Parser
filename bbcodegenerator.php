@@ -28,7 +28,7 @@
 # Defines
 define('ROOT',              dirname(__FILE__));
 define('ENDL',              "\r\n");
-define('DEVMODE',           true);
+define('DEVMODE',           false);
 define('SECONDS_PER_DAY',   86400);
 
 # PHP and content settings

@@ -28,7 +28,7 @@
 # Defines
 define('ROOT',              dirname(__FILE__));
 define('ENDL',              "\r\n");
-define('DEVMODE',           false);
+define('DEVMODE',           true);
 define('SECONDS_PER_DAY',   86400);
 
 # PHP and content settings
@@ -105,7 +105,15 @@ SELECT
     users.status,
     today.userid,
     today.rank,
-    IFNULL(yesterday.rank, today.rank) AS `oldrank`,
+    IFNULL(
+        yesterday.rank,
+        ( SELECT t.rank
+        FROM 3_updates AS t
+        WHERE t.userid = today.userid
+        AND t.seqnum < today.seqnum
+        ORDER BY t.seqnum DESC
+        LIMIT 1)
+    ) AS `oldrank`,
     today.keys,
     today.clicks,
     today.upload,

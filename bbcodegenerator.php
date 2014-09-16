@@ -105,7 +105,7 @@ SELECT
     users.status,
     today.userid,
     today.rank,
-    yesterday.rank AS `oldrank`,
+    IFNULL(yesterday.rank, today.rank) AS `oldrank`,
     today.keys,
     today.clicks,
     today.upload,

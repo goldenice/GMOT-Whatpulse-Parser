@@ -427,6 +427,8 @@ foreach ($users as $user) {
         }
         echo ']';
         
+        echo Format::Bandwidth($user->getRawData('download'));
+        
         $downloaddiff = $user->getRawData('downloaddiff');
         if ($downloaddiff > 0) {
             if ($downloaddiff == $highest['downloaddiff']) {
@@ -434,7 +436,6 @@ foreach ($users as $user) {
             } else {
                 $prefix = ' [green]';
             }
-            echo Format::Bandwidth($user->getRawData('download'));
             echo $prefix . '+' . Format::Bandwidth($downloaddiff);
         }
     }

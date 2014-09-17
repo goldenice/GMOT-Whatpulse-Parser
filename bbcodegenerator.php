@@ -1,5 +1,6 @@
 <?php
 /*	GMOT BB-code Whatpulse stats parser
+ 
  *	Parses stats from the database into BBCode
  *			Version: 1.1
  *
@@ -94,9 +95,12 @@ ORDER BY
 LIMIT 3;';
 
 $result = $db->query($sql);
-$statsDateTill = $result->fetch_row()[0];
-$statsDateFrom = $result->fetch_row()[0];
-$statsDateYesterday = $result->fetch_row()[0];
+$statsDateTill = $result->fetch_row();
+$statsDateTill = $statsDateTill[0];
+$statsDateFrom = $result->fetch_row();
+$statsDateFrom = $statsDateFrom[0];
+$statsDateYesterday = $result->fetch_row();
+$statsDateYesterday = $statsDateYesterday[0];
 
 // userdata
 $sql = '
@@ -124,6 +128,7 @@ SELECT
     today.upload    - yesterday.upload      AS `uploaddiff`,
     today.download  - yesterday.download    AS `downloaddiff`,
     today.uptime    - yesterday.uptime      AS `uptimediff`,
+    today.upload    - yesterday.upload 		+ today.download 	- yesterday.download 	AS `bandwidthdiff`,
     yesterday.lastpulse
 FROM
     3_users AS users
@@ -180,7 +185,7 @@ while ($userData = $result->fetch_assoc()) {
 // while we're iterating through the users, also record events (users joining, leaving, etc.)
 
 $events = array();
-$statkeys = array('keys', 'clicks', 'upload', 'download', 'uptime');
+$statkeys = array('keys', 'clicks', 'upload', 'download', 'uptime', 'bandwidth');
 
 foreach ($statkeys as $key) {
     $totals[$key] = 0;
@@ -246,7 +251,7 @@ if (date('z', $statsDateTill) % 2 == 0) {
     $thirdStatHeading = 'Uptime';
 } else {
     $thirdStat = 'network';
-    $thirdStatHeading = '[abbr=Upload]Download';
+    $thirdStatHeading = 'Bandwidth';
 }
 
 // Milestones
@@ -418,28 +423,19 @@ foreach ($users as $user) {
             }
             echo $prefix . '+' . Format::Uptime($uptimediff);
         }
-    } elseif ($thirdStat == 'network') {
+    } elseif ($thirdStat == 'network') {       
+        echo Format::Bandwidth($user->getRawData('download') + $user->getRawData('upload'));
         
-        $upload = $user->getRawData('upload');
-        if ($upload > 0) {
-            echo '[abbr=' . Format::Bandwidth($upload);
-            $uploaddiff = $user->getRawData('uploaddiff');
-            if ($uploaddiff > 0) {
-                echo ' +' . Format::Bandwidth($uploaddiff);
-            }
-            echo ']';
-        }
-        
-        echo Format::Bandwidth($user->getRawData('download'));
-        
+        $uploaddiff = $user->getRawData('uploaddiff');
         $downloaddiff = $user->getRawData('downloaddiff');
-        if ($downloaddiff > 0) {
-            if ($downloaddiff == $highest['downloaddiff']) {
+        $bandwidthDiff = $uploaddiff + $downloaddiff;
+        if ($bandwidthDiff > 0) {
+            if ($bandwidthDiff == $highest['bandwidthdiff']) {
                 $prefix = ' [blue]';
             } else {
                 $prefix = ' [green]';
             }
-            echo $prefix . '+' . Format::Bandwidth($downloaddiff);
+            echo $prefix . '+' . Format::Bandwidth($bandwidthDiff);
         }
     }
     

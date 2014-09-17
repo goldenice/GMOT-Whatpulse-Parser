@@ -126,13 +126,13 @@ SELECT
     today.download,
     today.uptime,
     today.upload + today.download           AS `bandwidth`,
-    today.keys      - yesterday.keys        AS `keysdiff`,
-    today.clicks    - yesterday.clicks      AS `clicksdiff`,
-    today.upload    - yesterday.upload      AS `uploaddiff`,
-    today.download  - yesterday.download    AS `downloaddiff`,
-    today.uptime    - yesterday.uptime      AS `uptimediff`,
+    today.keys      - yesterday.keys        AS `keysDiff`,
+    today.clicks    - yesterday.clicks      AS `clicksDiff`,
+    today.upload    - yesterday.upload      AS `uploadDiff`,
+    today.download  - yesterday.download    AS `downloadDiff`,
+    today.uptime    - yesterday.uptime      AS `uptimeDiff`,
     today.download  - yesterday.download +
-    today.uptime    - yesterday.uptime 	    AS `bandwidthdiff`,
+    today.uptime    - yesterday.uptime 	    AS `bandwidthDiff`,
     yesterday.lastpulse
 FROM
     3_users AS users
@@ -193,8 +193,8 @@ $statkeys = array('keys', 'clicks', 'upload', 'download', 'uptime', 'bandwidth')
 
 foreach ($statkeys as $key) {
     $totals[$key] = 0;
-    $totals[$key . 'diff'] = 0;
-    $highest[$key . 'diff'] = 0;
+    $totals[$key . 'Diff'] = 0;
+    $highest[$key . 'Diff'] = 0;
 }
 $totals['savers'] = 0;
 $totals['pulsers'] = 0;
@@ -203,8 +203,8 @@ foreach ($users as $user) {
     
     foreach ($statkeys as $key) {
         $totals[$key]           += $user->getRawData($key);
-        $totals[$key . 'diff']  += $user->getRawData($key . 'diff');
-        $highest[$key . 'diff'] = max($highest[$key . 'diff'], $user->getRawData($key . 'diff'));
+        $totals[$key . 'Diff']  += $user->getRawData($key . 'Diff');
+        $highest[$key . 'Diff'] = max($highest[$key . 'Diff'], $user->getRawData($key . 'Diff'));
     }
     
     switch($user->getRawData('status')) {
@@ -220,7 +220,7 @@ foreach ($users as $user) {
     }
     
     // count active users (users who pulsed this day)
-    if ($user->getRawData('keysdiff') > 0 || $user->getRawData('clicksdiff') > 0) {
+    if ($user->getRawData('keysDiff') > 0 || $user->getRawData('clicksDiff') > 0) {
         $totals['pulsers'] += 1;
     }
     
@@ -329,13 +329,13 @@ foreach ($users as $user) {
     echo '[tr][td]';
     
     $rank = $user->getRawData('rank');
-    $rankdiff = $user->getRankDiff();
+    $rankDiff = $user->getRankDiff();
     
     // red or green text when rank has changed
-    if ($rankdiff < 0) {
-        echo '[green][abbr=+' . Format::Number(-$rankdiff) . ']'; 
-    } elseif ($rankdiff > 0) {
-        echo '[red][abbr=-' . Format::Number($rankdiff) . ']';
+    if ($rankDiff < 0) {
+        echo '[green][abbr=+' . Format::Number(-$rankDiff) . ']'; 
+    } elseif ($rankDiff > 0) {
+        echo '[red][abbr=-' . Format::Number($rankDiff) . ']';
     }
     echo $rank . '[/td]';
     
@@ -345,9 +345,9 @@ foreach ($users as $user) {
     
     echo '[td]';
     
-    // show rank up symbol if keys - keysdiff is smaller than the next milestone.
+    // show rank up symbol if keys - keysDiff is smaller than the next milestone.
     if ($milestoneIndex < count($milestones) - 2) {
-        if ($user->getRawData('keys') - $user->getRawData('keysdiff') < $milestones[$milestoneIndex + 1]['keyvalue']) {
+        if ($user->getRawData('keys') - $user->getRawData('keysDiff') < $milestones[$milestoneIndex + 1]['keyvalue']) {
             echo '[img]' . $basedir . '/rank_up.png[/img]';
         }
     }
@@ -365,10 +365,10 @@ foreach ($users as $user) {
     
     echo '[td]' . Format::StatNumber($user->getRawData('keys'));
     
-    // keysdiff value
-    $keysdiff = $user->getRawData('keysdiff');
+    // keysDiff value
+    $keysDiff = $user->getRawData('keysDiff');
     
-    if ($keysdiff > 0) {
+    if ($keysDiff > 0) {
         
         $saverdays = $user->getRawData('saverdays');
         $prefix = '';
@@ -376,15 +376,15 @@ foreach ($users as $user) {
         // cannot use StatNumber inside [abbr] tag
         if ($saverdays > 1) {
             $prefix .= '[abbr=Verdeeld over ' . Format::Number($saverdays) . ' dagen, ';
-            $prefix .= 'gemiddeld ' . Format::Number($keysdiff / $saverdays) . ' keys per dag]';
+            $prefix .= 'gemiddeld ' . Format::Number($keysDiff / $saverdays) . ' keys per dag]';
         }
         
-        if ($keysdiff == $highest['keysdiff']) {
+        if ($keysDiff == $highest['keysDiff']) {
             $prefix .= ' [blue]';
         } else {
             $prefix .= ' [green]';
         }
-        echo $prefix . '+' . Format::StatNumber($keysdiff);
+        echo $prefix . '+' . Format::StatNumber($keysDiff);
     }
     
     echo ' [/td]';
@@ -395,17 +395,17 @@ foreach ($users as $user) {
     
     echo '[td]' . Format::StatNumber($user->getRawData('clicks'));
     
-    // clicksdiff value
-    $clicksdiff = $user->getRawData('clicksdiff');
+    // clicksDiff value
+    $clicksDiff = $user->getRawData('clicksDiff');
     
-    if ($clicksdiff > 0) {
+    if ($clicksDiff > 0) {
         
-        if ($clicksdiff == $highest['clicksdiff']) {
+        if ($clicksDiff == $highest['clicksDiff']) {
             $prefix = ' [blue]';
         } else {
             $prefix = ' [green]';
         }
-        echo $prefix . '+' . Format::StatNumber($clicksdiff);
+        echo $prefix . '+' . Format::StatNumber($clicksDiff);
     }
     
     echo ' [/td]';
@@ -418,26 +418,26 @@ foreach ($users as $user) {
     if ($thirdStat == 'uptime') {
         echo Format::Uptime($user->getRawData('uptime'));
         
-        $uptimediff = $user->getRawData('uptimediff');
-        if ($uptimediff > 0) {
-            if ($uptimediff == $highest['uptimediff']) {
+        $uptimeDiff = $user->getRawData('uptimeDiff');
+        if ($uptimeDiff > 0) {
+            if ($uptimeDiff == $highest['uptimeDiff']) {
                 $prefix = ' [blue]';
             } else {
                 $prefix = ' [green]';
             }
-            echo $prefix . '+' . Format::Uptime($uptimediff);
+            echo $prefix . '+' . Format::Uptime($uptimeDiff);
         }
     } elseif ($thirdStat == 'bandwidth') {
         echo Format::Bandwidth($user->getRawData('bandwidth'));
         
-        $bandwidthdiff = $user->getRawData('downloaddiff');
-        if ($bandwidthdiff > 0) {
-            if ($bandwidthdiff == $highest['bandwidthdiff']) {
+        $bandwidthDiff = $user->getRawData('downloadDiff');
+        if ($bandwidthDiff > 0) {
+            if ($bandwidthDiff == $highest['bandwidthDiff']) {
                 $prefix = ' [blue]';
             } else {
                 $prefix = ' [green]';
             }
-            echo $prefix . '+' . Format::Bandwidth($bandwidthdiff);
+            echo $prefix . '+' . Format::Bandwidth($bandwidthDiff);
         }
     }
     
@@ -468,23 +468,23 @@ echo '[table]';
 
 echo '[tr][td]Keys [/td]';
 echo '[td]' . Format::StatNumber($totals['keys']) . ' [/td]';
-echo '[td]' . (($totals['keysdiff'] > 0)?'[green]+':'[red]-') . Format::StatNumber($totals['keysdiff']) . '[/td][/tr]' . ENDL;
+echo '[td]' . (($totals['keysDiff'] > 0)?'[green]+':'[red]-') . Format::StatNumber($totals['keysDiff']) . '[/td][/tr]' . ENDL;
 
 echo '[tr][td]Kliks [/td]';
 echo '[td]' . Format::StatNumber($totals['clicks']) . ' [/td]';
-echo '[td]' . (($totals['clicksdiff'] > 0)?'[green]+':'[red]-') . Format::StatNumber($totals['clicksdiff']) . '[/td][/tr]' . ENDL;
+echo '[td]' . (($totals['clicksDiff'] > 0)?'[green]+':'[red]-') . Format::StatNumber($totals['clicksDiff']) . '[/td][/tr]' . ENDL;
 
 echo '[tr][td]Uptime [/td]';
 echo '[td]' . Format::Uptime($totals['uptime']) . ' [/td]';
-echo '[td]' . (($totals['uptimediff'] > 0)?'[green]+':'[red]-') . Format::Uptime($totals['uptimediff']) . '[/td][/tr]' . ENDL;
+echo '[td]' . (($totals['uptimeDiff'] > 0)?'[green]+':'[red]-') . Format::Uptime($totals['uptimeDiff']) . '[/td][/tr]' . ENDL;
 
 echo '[tr][td]Download [/td]';
 echo '[td]' . Format::Bandwidth($totals['download']) . ' [/td]';
-echo '[td]' . (($totals['downloaddiff'] > 0)?'[green]+':'[red]-') . Format::Bandwidth($totals['downloaddiff']) . '[/td][/tr]' . ENDL;
+echo '[td]' . (($totals['downloadDiff'] > 0)?'[green]+':'[red]-') . Format::Bandwidth($totals['downloadDiff']) . '[/td][/tr]' . ENDL;
 
 echo '[tr][td]Upload [/td]';
 echo '[td]' . Format::Bandwidth($totals['upload']) . ' [/td]';
-echo '[td]' . (($totals['uploaddiff'] > 0)?'[green]+':'[red]-') . Format::Bandwidth($totals['uploaddiff']) . '[/td][/tr]' . ENDL;
+echo '[td]' . (($totals['uploadDiff'] > 0)?'[green]+':'[red]-') . Format::Bandwidth($totals['uploadDiff']) . '[/td][/tr]' . ENDL;
 
 if ($totals['pulsers'] > 0) {
     

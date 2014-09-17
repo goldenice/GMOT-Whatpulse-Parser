@@ -267,12 +267,12 @@ $milestones = array(
 );
 
 // find first milestone
-$milestoneIndex = -1;
+$milestoneIndex = 0;
 $milestonePrint = true;
 
 if (count($users) > 0) {
     
-    while ($milestones[$milestoneIndex+1]['keyvalue'] > $users[0]->getRawData('keys') && $milestoneIndex < count($milestones) - 2) {
+    while ($milestones[$milestoneIndex]['keyvalue'] > $users[0]->getRawData('keys') && $milestoneIndex < count($milestones) - 1) {
         $milestoneIndex += 1;
     }
     
@@ -298,7 +298,7 @@ foreach ($users as $user) {
     
     // determine if we need to print another milestone
     if ($milestoneIndex < count($milestones) - 1) {
-        while ($milestones[$milestoneIndex+1]['keyvalue'] > $user->getRawData('keys') && $milestoneIndex < count($milestones) - 1) {
+        while ($milestones[$milestoneIndex]['keyvalue'] > $user->getRawData('keys') && $milestoneIndex < count($milestones) - 1) {
             $milestoneIndex += 1;
             $milestonePrint = true;
         }
@@ -420,12 +420,15 @@ foreach ($users as $user) {
         }
     } elseif ($thirdStat == 'network') {
         
-        echo '[abbr=' . Format::Bandwidth($user->getRawData('upload'));
-        $uploaddiff = $user->getRawData('uploaddiff');
-        if ($uploaddiff > 0) {
-            echo ' +' . Format::Bandwidth($uploaddiff);
+        $upload = $user->getRawData('upload');
+        if ($upload > 0) {
+            echo '[abbr=' . Format::Bandwidth($upload);
+            $uploaddiff = $user->getRawData('uploaddiff');
+            if ($uploaddiff > 0) {
+                echo ' +' . Format::Bandwidth($uploaddiff);
+            }
+            echo ']';
         }
-        echo ']';
         
         echo Format::Bandwidth($user->getRawData('download'));
         

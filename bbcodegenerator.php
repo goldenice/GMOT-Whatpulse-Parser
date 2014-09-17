@@ -28,8 +28,10 @@
 # Defines
 define('ROOT',              dirname(__FILE__));
 define('ENDL',              "\r\n");
-define('DEVMODE',           false);
 define('SECONDS_PER_DAY',   86400);
+
+# Load configuration
+require_once('config.php');
 
 # PHP and content settings
 $starttime      = microtime(true);
@@ -64,8 +66,7 @@ function autoClassLoader($class) {
 spl_autoload_register('autoClassLoader');
 
 # Database Connection
-require_once('db.php');
-$db = new mysqli($dbhost, $dbuser, $dbpass, $dbname, $dbport);
+$db = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
 
 # Script Settings
 $teamtag 		= '[GMOT]'; // important for removing the team tag from the username.
@@ -248,17 +249,6 @@ foreach ($users as $user) {
 # --------------------------------------------------------------------------------------------------------------------
 
 
-
-// warning when developer mode is enabled
-if (DEVMODE) {
-    
-    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL;
-    echo '!!              DEVELOPER MODE IS ENABLED                !!' . ENDL;
-    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL;
-    echo '!!    OUTPUT MAY CONTAIN DEVELOPER DEBUG INFORMATION     !!' . ENDL;
-    echo '!!        PHP WARNINGS OR INCORRECT INFORMATION          !!' . ENDL;
-    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL . ENDL;
-}
 
 // choose which stat to use in the third column.
 if (date('z', $statsDateTill) % 2 == 0) {

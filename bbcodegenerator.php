@@ -39,6 +39,12 @@ if (DEVMODE) {
     error_reporting(-1);
     set_time_limit(60);
 } else {
+    
+    // don't let non-devs use PHP < 5.4
+    if (version_compare(PHP_VERSION, '5.4.0', '<')) {
+        die('You need at least PHP 5.4 to run this script.' . ENDL . ENDL . 'Time to upgrade! :)');
+    }
+    
     error_reporting(0);
     set_time_limit(10);
 }

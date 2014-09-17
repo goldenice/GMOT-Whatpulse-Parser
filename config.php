@@ -1,7 +1,7 @@
 <?php
 
 # Define developer mode
-define('DEVMODE',           false);
+define('DEVMODE', false);
 
 # Define database settings
 define('DB_HOST', 'lucb1e.com');

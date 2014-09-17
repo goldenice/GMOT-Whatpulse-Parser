@@ -420,12 +420,15 @@ foreach ($users as $user) {
         }
     } elseif ($thirdStat == 'network') {
         
-        echo '[abbr=' . Format::Bandwidth($user->getRawData('upload'));
-        $uploaddiff = $user->getRawData('uploaddiff');
-        if ($uploaddiff > 0) {
-            echo ' +' . Format::Bandwidth($uploaddiff);
+        $upload = $user->getRawData('upload');
+        if ($upload > 0) {
+            echo '[abbr=' . Format::Bandwidth($upload);
+            $uploaddiff = $user->getRawData('uploaddiff');
+            if ($uploaddiff > 0) {
+                echo ' +' . Format::Bandwidth($uploaddiff);
+            }
+            echo ']';
         }
-        echo ']';
         
         echo Format::Bandwidth($user->getRawData('download'));
         

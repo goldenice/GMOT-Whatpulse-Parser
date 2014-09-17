@@ -168,6 +168,11 @@ class Format {
     }
     
     static function Bandwidth($input) {
+        
+        if ($input == 0) {
+            return '-';
+        }
+        
         $terabyte	= 1024*1024;
         $gigabyte	= 1024;
         $output 	= '';

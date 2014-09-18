@@ -253,10 +253,10 @@ foreach ($users as $user) {
 // warning when developer mode is enabled 	
 if (DEVMODE) { 	 	
     echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL; 	
-    echo '!! DEVELOPER MODE IS ENABLED !!' . ENDL; 	
+    echo '!!                 DEVELOPER MODE IS ENABLED             !!' . ENDL; 	
     echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL;
-    echo '!! OUTPUT MAY CONTAIN DEVELOPER DEBUG INFORMATION !!' . ENDL; 	
-    echo '!! PHP WARNINGS OR INCORRECT INFORMATION !!' . ENDL; 	
+    echo '!!    OUTPUT MAY CONTAIN DEVELOPER DEBUG INFORMATION     !!' . ENDL; 	
+    echo '!!        PHP WARNINGS OR INCORRECT INFORMATION          !!' . ENDL; 	
     echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL . ENDL; 	
 } 	
 

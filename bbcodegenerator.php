@@ -316,8 +316,9 @@ echo '(' . date("H:i:s", $statsDateTill) . ')' . ENDL;
 echo 'Geteld vanaf ' . Format::DateTime($statsDateFrom) . ' ' . date('H:i:s', $statsDateFrom) . ENDL . ENDL;
 
 // table heading
-echo '[table][tr][td][b]#[/td][td][b]Gebruikersnaam[/td][td][b]Keys[/td][td][b]Kliks[/td]';
-echo '[td][b]' . $thirdStatHeading . '[/td][/tr]' . ENDL;
+echo '[table][tr][td][b]#[/td][td][b]Gebruikersnaam[/td]';
+echo '[td][b]Keys[/td][td][/td][td][b]Kliks[/td][td][/td]';
+echo '[td][b]' . $thirdStatHeading . '[/td][td][/td][/tr]' . ENDL;
 
 // table rows
 foreach ($users as $user) {
@@ -335,7 +336,7 @@ foreach ($users as $user) {
     // print a milestone if we have to
     if ($milestonePrint) {
         echo '[tr][td][/td][td][b]' . $milestones[$milestoneIndex]['name'] . '[/td]';
-        echo '[td][b]' . Format::Number($milestones[$milestoneIndex]['keyvalue']) . '[/td][td][/td][td][/td][/tr]' . ENDL;
+        echo '[td][right][b]' . Format::Number($milestones[$milestoneIndex]['keyvalue']) . '[/td][td][/td][td][/td][td][/td][td][/td][td][/td][/tr]' . ENDL;
         $milestonePrint = false;
     }
     
@@ -382,7 +383,7 @@ foreach ($users as $user) {
     // 3rd column: keys
     
     
-    echo '[td]' . Format::StatNumber($user->getRawData('keys'));
+    echo '[td][right]' . Format::StatNumber($user->getRawData('keys')) . '[/td][td]';
     
     // keysDiff value
     $keysDiff = $user->getRawData('keysDiff');
@@ -403,7 +404,7 @@ foreach ($users as $user) {
         } else {
             $prefix .= ' [green]';
         }
-        echo $prefix . '+' . Format::StatNumber($keysDiff);
+        echo '[right]' . $prefix . '+' . Format::StatNumber($keysDiff);
     }
     
     echo ' [/td]';
@@ -412,7 +413,7 @@ foreach ($users as $user) {
     // 4th column: clicks
     
     
-    echo '[td]' . Format::StatNumber($user->getRawData('clicks'));
+    echo '[td][right]' . Format::StatNumber($user->getRawData('clicks')) . '[/td][td]';
     
     // clicksDiff value
     $clicksDiff = $user->getRawData('clicksDiff');
@@ -424,7 +425,7 @@ foreach ($users as $user) {
         } else {
             $prefix = ' [green]';
         }
-        echo $prefix . '+' . Format::StatNumber($clicksDiff);
+        echo '[right]' . $prefix . '+' . Format::StatNumber($clicksDiff);
     }
     
     echo ' [/td]';
@@ -435,7 +436,7 @@ foreach ($users as $user) {
     echo '[td]';
     
     if ($thirdStat == 'uptime') {
-        echo Format::Uptime($user->getRawData('uptime'));
+        echo Format::Uptime($user->getRawData('uptime')) . '[/td][td]';
         
         $uptimeDiff = $user->getRawData('uptimeDiff');
         if ($uptimeDiff > 0) {
@@ -447,7 +448,7 @@ foreach ($users as $user) {
             echo $prefix . '+' . Format::Uptime($uptimeDiff);
         }
     } elseif ($thirdStat == 'bandwidth') {
-        echo Format::Bandwidth($user->getRawData('bandwidth'));
+        echo '[right]' . Format::Bandwidth($user->getRawData('bandwidth')) . '[/td][td]';
         
         $bandwidthDiff = $user->getRawData('downloadDiff');
         if ($bandwidthDiff > 0) {
@@ -456,7 +457,7 @@ foreach ($users as $user) {
             } else {
                 $prefix = ' [green]';
             }
-            echo $prefix . '+' . Format::Bandwidth($bandwidthDiff);
+            echo '[right]' . $prefix . '+' . Format::Bandwidth($bandwidthDiff);
         }
     }
     

@@ -404,7 +404,7 @@ foreach ($users as $user) {
         } else {
             $prefix .= ' [green]';
         }
-        echo '[right]' . $prefix . '+' . Format::StatNumber($keysDiff);
+        echo $prefix . '+' . Format::StatNumber($keysDiff);
     }
     
     echo ' [/td]';
@@ -425,7 +425,7 @@ foreach ($users as $user) {
         } else {
             $prefix = ' [green]';
         }
-        echo '[right]' . $prefix . '+' . Format::StatNumber($clicksDiff);
+        echo $prefix . '+' . Format::StatNumber($clicksDiff);
     }
     
     echo ' [/td]';
@@ -448,7 +448,7 @@ foreach ($users as $user) {
             echo $prefix . '+' . Format::Uptime($uptimeDiff);
         }
     } elseif ($thirdStat == 'bandwidth') {
-        echo '[right]' . Format::Bandwidth($user->getRawData('bandwidth')) . '[/td][td]';
+        echo Format::Bandwidth($user->getRawData('bandwidth')) . '[/td][td]';
         
         $bandwidthDiff = $user->getRawData('downloadDiff');
         if ($bandwidthDiff > 0) {
@@ -457,7 +457,7 @@ foreach ($users as $user) {
             } else {
                 $prefix = ' [green]';
             }
-            echo '[right]' . $prefix . '+' . Format::Bandwidth($bandwidthDiff);
+            echo $prefix . '+' . Format::Bandwidth($bandwidthDiff);
         }
     }
     

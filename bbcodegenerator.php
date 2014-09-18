@@ -199,6 +199,7 @@ foreach ($statkeys as $key) {
 }
 $totals['savers'] = 0;
 $totals['pulsers'] = 0;
+$totals['active'] = 0;
 
 foreach ($users as $user) {
     
@@ -220,14 +221,20 @@ foreach ($users as $user) {
             break;
     }
     
-    // count active users (users who pulsed this day)
-    if ($user->getRawData('keysDiff') > 0 || $user->getRawData('clicksDiff') > 0) {
-        $totals['pulsers'] += 1;
-    }
-    
-    // get saver days if the user is a saver
-    if ($user->isSaver() && $user->hasPulsed()) {
-        $totals['savers'] += 1;
+    // count active users, pulsers and savers
+    if ($user->isActive()) {
+        
+        $totals['active'] += 1;
+        
+        if ($user->hasPulsed()) {
+            
+            $totals['pulsers'] += 1;
+            
+            if ($user->isSaver()) {
+                
+                $totals['savers'] += 1;
+            }
+        }
     }
 }
 
@@ -479,32 +486,32 @@ echo '[b]Totalen[/b]' . ENDL;
 echo '[table]';
 
 echo '[tr][td]Keys [/td]';
-echo '[td]' . Format::StatNumber($totals['keys']) . ' [/td]';
+echo '[td]' . Format::StatNumber($totals['keys']) . '[tt]    [/tt][/td]';
 echo '[td]' . (($totals['keysDiff'] > 0)?'[green]+':'[red]-') . Format::StatNumber($totals['keysDiff']) . '[/td][/tr]' . ENDL;
 
 echo '[tr][td]Kliks [/td]';
-echo '[td]' . Format::StatNumber($totals['clicks']) . ' [/td]';
+echo '[td]' . Format::StatNumber($totals['clicks']) . '[/td]';
 echo '[td]' . (($totals['clicksDiff'] > 0)?'[green]+':'[red]-') . Format::StatNumber($totals['clicksDiff']) . '[/td][/tr]' . ENDL;
 
 echo '[tr][td]Uptime [/td]';
-echo '[td]' . Format::Uptime($totals['uptime']) . ' [/td]';
+echo '[td]' . Format::Uptime($totals['uptime']) . '[/td]';
 echo '[td]' . (($totals['uptimeDiff'] > 0)?'[green]+':'[red]-') . Format::Uptime($totals['uptimeDiff']) . '[/td][/tr]' . ENDL;
 
 echo '[tr][td]Download [/td]';
-echo '[td]' . Format::Bandwidth($totals['download']) . ' [/td]';
+echo '[td]' . Format::Bandwidth($totals['download']) . '[/td]';
 echo '[td]' . (($totals['downloadDiff'] > 0)?'[green]+':'[red]-') . Format::Bandwidth($totals['downloadDiff']) . '[/td][/tr]' . ENDL;
 
 echo '[tr][td]Upload [/td]';
-echo '[td]' . Format::Bandwidth($totals['upload']) . ' [/td]';
+echo '[td]' . Format::Bandwidth($totals['upload']) . '[/td]';
 echo '[td]' . (($totals['uploadDiff'] > 0)?'[green]+':'[red]-') . Format::Bandwidth($totals['uploadDiff']) . '[/td][/tr]' . ENDL;
 
 if ($totals['pulsers'] > 0) {
     
-    echo '[tr][td]-[/td][td] [/td][td] [/td][/tr]' . ENDL;
+    echo '[tr][td]Pulsers[/td][td]' . $totals['pulsers'] . '[/td]';
+    echo '[td][abbr=Percentage van alle leden]' . round(($totals['pulsers'] / $totals['active']) * 100, 2).'%[/td][/tr]' . ENDL;
     
-    echo '[tr][td]Spaarders[/td][td]'.$totals['savers'].'[/td]';
-    echo '[td][abbr=' . $totals['savers'] . ' van de ' . (($totals['pulsers'] > 1)?$totals['pulsers'] . ' mensen die pulsten': '1 mens die pulste') . ']';
-    echo round(($totals['savers'] / $totals['pulsers']) * 100, 2).'%[/abbr][/td][/tr]' . ENDL;
+    echo '[tr][td]Spaarders[tt]    [/tt][/td][td]' . $totals['savers'] . '[/td]';
+    echo '[td][abbr=Percentage van de pulsers]' . round(($totals['savers'] / $totals['pulsers']) * 100, 2).'%[/td][/tr]' . ENDL;
     
 }
 

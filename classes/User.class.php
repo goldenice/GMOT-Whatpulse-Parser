@@ -25,8 +25,8 @@ class User {
     }
     
     public function hasPulsed() {
-        if (isset($this->data['keysdiff']) && isset($this->data['clicksdiff'])) {
-            return ($this->data['keysdiff'] != 0 || $this->data['clicksdiff'] != 0);
+        if (isset($this->data['keysDiff']) && isset($this->data['clicksDiff'])) {
+            return ($this->data['keysDiff'] != 0 || $this->data['clicksDiff'] != 0);
         }
         return false;
     }

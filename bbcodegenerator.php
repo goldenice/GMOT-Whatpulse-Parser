@@ -133,7 +133,7 @@ SELECT
     today.download  - yesterday.download    AS `downloadDiff`,
     today.uptime    - yesterday.uptime      AS `uptimeDiff`,
     today.download  - yesterday.download +
-    today.uptime    - yesterday.uptime 	    AS `bandwidthDiff`,
+    today.upload    - yesterday.upload 	    AS `bandwidthDiff`,
     yesterday.lastpulse
 FROM
     3_users AS users

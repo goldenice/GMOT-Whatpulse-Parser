@@ -450,7 +450,7 @@ foreach ($users as $user) {
     } elseif ($thirdStat == 'bandwidth') {
         echo Format::Bandwidth($user->getRawData('bandwidth')) . '[/td][td]';
         
-        $bandwidthDiff = $user->getRawData('downloadDiff');
+        $bandwidthDiff = $user->getRawData('bandwidthDiff');
         if ($bandwidthDiff > 0) {
             if ($bandwidthDiff == $highest['bandwidthDiff']) {
                 $prefix = ' [blue]';

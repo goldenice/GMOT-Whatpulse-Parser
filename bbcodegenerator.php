@@ -71,7 +71,8 @@ $db = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
 # Script Settings
 $teamtag 		= '[GMOT]'; // important for removing the team tag from the username.
 $scripturl 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodegenerator.php';
-$basedir 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new';
+// $basedir 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new';
+$rank_up_png    = 'http://is.gd/6aftPs';
 
 
 
@@ -368,7 +369,7 @@ foreach ($users as $user) {
     // show rank up symbol if keys - keysDiff is smaller than the next milestone.
     if ($milestoneIndex < count($milestones) - 1) {
         if ($user->getRawData('keys') - $user->getRawData('keysDiff') < $milestones[$milestoneIndex]['keyvalue']) {
-            echo '[img]' . $basedir . '/rank_up.png[/img]';
+            echo '[img]' . $rank_up_png . '[/img] ';
         }
     }
     

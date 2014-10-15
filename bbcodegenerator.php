@@ -366,8 +366,8 @@ foreach ($users as $user) {
     echo '[td]';
     
     // show rank up symbol if keys - keysDiff is smaller than the next milestone.
-    if ($milestoneIndex < count($milestones) - 2) {
-        if ($user->getRawData('keys') - $user->getRawData('keysDiff') < $milestones[$milestoneIndex + 1]['keyvalue']) {
+    if ($milestoneIndex < count($milestones) - 1) {
+        if ($user->getRawData('keys') - $user->getRawData('keysDiff') < $milestones[$milestoneIndex]['keyvalue']) {
             echo '[img]' . $basedir . '/rank_up.png[/img]';
         }
     }

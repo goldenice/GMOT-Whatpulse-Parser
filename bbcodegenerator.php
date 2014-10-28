@@ -73,7 +73,11 @@ if ($db->connect_errno) {
 
 # Script Settings
 $teamtag 		= '[GMOT]'; // important for removing the team tag from the username.
-$scripturl 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodegenerator.php';
+$scripturls		= array(
+    'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodegenerator.php',
+    'http://jochemkuijpers.nl/etc/gmot/whatpulsestats/bbcodegenerator.php'
+    
+);
 // $basedir 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new';
 $rank_up_png    = 'http://is.gd/6aftPs';
 
@@ -522,7 +526,19 @@ if ($totals['pulsers'] > 0) {
 
 echo '[/table]' . ENDL . ENDL;
 
-echo '[url=' . $scripturl . ']Deze statistieken[/url] ([url=https://github.com/goldenice/GMOT-Whatpulse-Parser]Broncode[/url])' . ENDL . ENDL;
+echo '[url=' . array_shift($scripturls) . ']Deze statistieken[/url]';
+
+$n = 1;
+if (count($scripturls) > 0) {
+    echo '[sup]';
+    while(count($scripturls) > 0) {
+        echo '[[url=' . array_shift($scripturls) . ']mirror ' . $n . '[/url]]';
+        $n += 1;
+    }
+    echo '[/sup]';
+}
+
+echo ' ([url=https://github.com/goldenice/GMOT-Whatpulse-Parser]Broncode[/url])' . ENDL . ENDL;
 
 if (DEVMODE) {
     echo 'Generated in ' . ((microtime(true) - $starttime) * 1000) . ' milliseconds.';

@@ -35,7 +35,7 @@ require_once('config.php');
 
 # PHP and content settings
 $starttime      = microtime(true);
-if (DEVMODE) {
+if (DEVMODE || isset($_GET['devmode'])) {
     ini_set('display_errors',1);
     ini_set('display_startup_errors',1);
     error_reporting(-1);
@@ -267,7 +267,7 @@ foreach ($users as $user) {
 
 
 // warning when developer mode is enabled 	
-if (DEVMODE) { 	 	
+if (DEVMODE || isset($_GET['devmode'])) { 	 	
     echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL; 	
     echo '!!               DEVELOPER MODE IS ENABLED               !!' . ENDL; 	
     echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL;
@@ -541,6 +541,6 @@ if (count($scripturls) > 0) {
 
 echo ' ([url=https://github.com/goldenice/GMOT-Whatpulse-Parser]Broncode[/url])' . ENDL . ENDL;
 
-if (DEVMODE) {
+if (DEVMODE || isset($_GET['devmode']) || isset($_GET['gentime'])) {
     echo 'Generated in ' . ((microtime(true) - $starttime) * 1000) . ' milliseconds.';
 }

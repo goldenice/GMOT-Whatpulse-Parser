@@ -67,6 +67,9 @@ spl_autoload_register('autoClassLoader');
 
 # Database Connection
 $db = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
+if ($db->connect_errno) {
+    die('MySQL verbinding mislukt: ' . $db->connect_error);
+}
 
 # Script Settings
 $teamtag 		= '[GMOT]'; // important for removing the team tag from the username.

@@ -76,8 +76,8 @@ $teamtag 		= '[GMOT]'; // important for removing the team tag from the username.
 $scripturls		= array(
     'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodegenerator.php',
     'http://jochemkuijpers.nl/etc/gmot/whatpulsestats/bbcodegenerator.php',
-    'http://private.woutervdb.com/php/gmotwpstats/bbcodegenerator.php'
-    
+    'http://private.woutervdb.com/php/gmotwpstats/bbcodegenerator.php',
+    'http://squll.io/gmot-wp/bbcodegenerator.php'
 );
 // $basedir 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new';
 $rank_up_png    = 'http://is.gd/6aftPs';

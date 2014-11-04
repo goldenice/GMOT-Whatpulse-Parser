@@ -63,7 +63,7 @@ if ($db->connect_errno) {
 $teamtag 		= '[GMOT]'; // important for removing the team tag from the username.
 $sourceUrl      = 'https://raw.githubusercontent.com/goldenice/GMOT-Whatpulse-Parser/master/bbcodegenerator.php';
 $scriptUrls		= array(
-    'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodegenerator.php',
+    'https://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodegenerator.php',
     'http://jochemkuijpers.nl/etc/gmot/whatpulsestats/bbcodegenerator.php',
     'http://private.woutervdb.com/php/gmotwpstats/bbcodegenerator.php',
     'http://squll.io/gmot-wp/bbcodegenerator.php'
@@ -247,7 +247,7 @@ foreach ($users as $user) {
     }
 }
 
-// now we're going to if the mirrors are up to date
+// now we're going to check whether or not the mirrors are up to date
 $ownVersion = filemtime(__FILE__);
 $mirrors = array();
 $mirrorValidate = true;

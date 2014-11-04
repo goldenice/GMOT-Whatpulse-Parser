@@ -1,29 +1,13 @@
 <?php
 /*	GMOT BB-code Whatpulse stats parser
  *	Parses stats from the database into BBCode
- *			Version: 1.1
  *
- *  Rewritten by Jochem Kuijpers
- *	Originally written by Rick Lubbers
- *	Special thanks to Lucb1e (I stole some code from the old parser) and to any other person who helped me code this.
- *
- *	------------
- *	Known bugs
- *	- None so far (report on GitHub)
- *
- *	------------
- *	Changelog
- *	2013-03-07: Added the 'milestone up'-icon
- *	2013-03-07: Probably fixed the just-left-rank-up bug. Testing tomorrow.
- *	2013-03-26: Thanks to Ericlegomeer for giving me the solution to the multiple-guys-have-highest-pulse-but-do-not-show-up-in-blue-bug.
- *	2013-08-17: Removed SQL-query from loop, so the loadtime improved a lot (approx. 26s to 800ms)
- * 	2013-10-29: Added [nobbc] tags around usernames, so users can't use bbcode or smileys anymore.
- *	2014-03-03: Fixed bug that caused new users not to be shown on the first day
- *	2014-06-?: Rank displaymode has been changed so the numbers are in a more logical order at the milestones.
- *	2014-06-09: turned off E_NOTICE error reports
- *	2014-08-18: fixed bug where someone that rejoins the team would fuck up the rankings. Oh, and added a welcome back text.
- *	2014-09-14: Rewritten by Jochem Kuijpers hopefully fixing the savers (spaarders) bug and making the code more easily maintanable. Load time is about 270ms now.
+ *	Source, contributors, changelog and issues:
+ *  - https://github.com/goldenice/GMOT-Whatpulse-Parser
  */
+
+# display as plain text
+header('Content-Type: text/plain');
 
 # Defines
 define('ROOT',              dirname(__FILE__));
@@ -32,16 +16,22 @@ define('SECONDS_PER_DAY',   86400);
 
 # Load configuration
 require_once('config.php');
+require_once('functions.php');
+
+# get script hash (for mirror check)
+if (isset($_GET['hash'])) {
+    die(sha1Newline(file_get_contents(__FILE__)));
+}
 
 # PHP and content settings
-$starttime      = microtime(true);
+$starttime = microtime(true);
+
 if (DEVMODE || isset($_GET['devmode'])) {
     ini_set('display_errors',1);
     ini_set('display_startup_errors',1);
     error_reporting(-1);
     set_time_limit(60);
 } else {
-    
     // don't let non-devs use PHP < 5.4
     if (version_compare(PHP_VERSION, '5.4.0', '<')) {
         die('You need at least PHP 5.4 to run this script.' . ENDL . ENDL . 'Time to upgrade! :)');
@@ -50,8 +40,6 @@ if (DEVMODE || isset($_GET['devmode'])) {
     error_reporting(0);
     set_time_limit(10);
 }
-
-header('Content-Type: text/plain');
 
 # Automatic Class Loader
 function autoClassLoader($class) {
@@ -73,7 +61,8 @@ if ($db->connect_errno) {
 
 # Script Settings
 $teamtag 		= '[GMOT]'; // important for removing the team tag from the username.
-$scripturls		= array(
+$sourceUrl      = 'https://raw.githubusercontent.com/goldenice/GMOT-Whatpulse-Parser/master/bbcodegenerator.php';
+$scriptUrls		= array(
     'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodegenerator.php',
     'http://jochemkuijpers.nl/etc/gmot/whatpulsestats/bbcodegenerator.php',
     'http://private.woutervdb.com/php/gmotwpstats/bbcodegenerator.php',
@@ -97,6 +86,17 @@ $rank_up_png    = 'http://is.gd/6aftPs';
 # --------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------
 
+
+
+// warning when developer mode is enabled 	
+if (DEVMODE || isset($_GET['devmode'])) { 	 	
+    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL; 	
+    echo '!!               DEVELOPER MODE IS ENABLED               !!' . ENDL; 	
+    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL;
+    echo '!!    OUTPUT MAY CONTAIN DEVELOPER DEBUG INFORMATION     !!' . ENDL; 	
+    echo '!!        PHP WARNINGS OR INCORRECT INFORMATION          !!' . ENDL; 	
+    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL . ENDL; 	
+}
 
 
 // stat timestamps (from - till)
@@ -247,6 +247,23 @@ foreach ($users as $user) {
     }
 }
 
+// now we're going to if the mirrors are up to date
+$ownVersion = filemtime(__FILE__);
+$mirrors = array();
+$mirrorValidate = true;
+
+$sourceStr = readExternalFile($sourceUrl);
+$sourceHash = sha1Newline($sourceStr);
+
+// if somehow github is down; don't bother validating
+if ($sourceStr === false) {
+    $mirrorValidate = false;
+}
+
+foreach($scriptUrls as $url) {
+    $mirrors[] = new Mirror($url, $sourceHash);
+}
+
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -264,17 +281,6 @@ foreach ($users as $user) {
 # --------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------
 
-
-
-// warning when developer mode is enabled 	
-if (DEVMODE || isset($_GET['devmode'])) { 	 	
-    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL; 	
-    echo '!!               DEVELOPER MODE IS ENABLED               !!' . ENDL; 	
-    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL;
-    echo '!!    OUTPUT MAY CONTAIN DEVELOPER DEBUG INFORMATION     !!' . ENDL; 	
-    echo '!!        PHP WARNINGS OR INCORRECT INFORMATION          !!' . ENDL; 	
-    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL . ENDL; 	
-} 	
 
 
 // choose which stat to use in the third column.
@@ -416,7 +422,7 @@ foreach ($users as $user) {
         echo $prefix . '+' . Format::StatNumber($keysDiff);
     }
     
-    echo ' [/td]';
+    echo '[/td]';
     
     
     // 4th column: clicks
@@ -437,7 +443,7 @@ foreach ($users as $user) {
         echo $prefix . '+' . Format::StatNumber($clicksDiff);
     }
     
-    echo ' [/td]';
+    echo '[/td]';
     
     
     // 5th column: third stat
@@ -527,19 +533,22 @@ if ($totals['pulsers'] > 0) {
 
 echo '[/table]' . ENDL . ENDL;
 
-echo '[url=' . array_shift($scripturls) . ']Deze statistieken[/url]';
-
-$n = 1;
-if (count($scripturls) > 0) {
-    echo '[sup]';
-    while(count($scripturls) > 0) {
-        echo '[[url=' . array_shift($scripturls) . ']mirror ' . $n . '[/url]]';
-        $n += 1;
+$n = 0;
+foreach($mirrors as $mirror) {
+    switch($n) {
+    case 0:
+        echo $mirror->getString('Deze statistieken', $mirrorValidate);
+        break;
+    case 1:
+        echo '[sup]';
+    default:
+        echo '[' . $mirror->getString('mirror ' . $n, $mirrorValidate) . ']';
     }
-    echo '[/sup]';
+    
+    $n += 1;
 }
 
-echo ' ([url=https://github.com/goldenice/GMOT-Whatpulse-Parser]Broncode[/url])' . ENDL . ENDL;
+echo '[/sup] ([url=https://github.com/goldenice/GMOT-Whatpulse-Parser]Broncode[/url])' . ENDL . ENDL;
 
 if (DEVMODE || isset($_GET['devmode']) || isset($_GET['gentime'])) {
     echo 'Generated in ' . ((microtime(true) - $starttime) * 1000) . ' milliseconds.';

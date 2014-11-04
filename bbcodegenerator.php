@@ -61,7 +61,7 @@ if ($db->connect_errno) {
 
 # Script Settings
 $teamtag 		= '[GMOT]'; // important for removing the team tag from the username.
-$sourceUrl      = 'https://raw.githubusercontent.com/jochemkuijpers/GMOT-Whatpulse-Parser/master/bbcodegenerator.php';
+$sourceUrl      = 'https://raw.githubusercontent.com/goldenice/GMOT-Whatpulse-Parser/master/bbcodegenerator.php';
 $scriptUrls		= array(
     'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodegenerator.php',
     'http://jochemkuijpers.nl/etc/gmot/whatpulsestats/bbcodegenerator.php',

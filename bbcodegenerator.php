@@ -123,12 +123,7 @@ SELECT
     today.rank,
     IFNULL(
         yesterday.rank,
-        ( SELECT t.rank
-        FROM 3_updates AS t
-        WHERE t.userid = today.userid
-        AND t.seqnum < today.seqnum
-        ORDER BY t.seqnum DESC
-        LIMIT 1)
+        today.rank
     ) AS `oldrank`,
     today.keys,
     today.clicks,
@@ -338,7 +333,7 @@ echo '[td][b]' . $thirdStatHeading . '[/td][td][/td][/tr]' . ENDL;
 // table rows
 foreach ($users as $user) {
     // do not display users that have left.
-    if (!$user->isActive()) { continue; }
+    if (!$user->isActive() || $user->getRawData('keys') < 10) { continue; }
     
     // determine if we need to print another milestone
     if ($milestoneIndex < count($milestones) - 1) {

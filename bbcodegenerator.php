@@ -1,47 +1,31 @@
 <?php
 /*	GMOT BB-code Whatpulse stats parser
  *	Parses stats from the database into BBCode
- *			Version: 1.1
  *
- *  Rewritten by Jochem Kuijpers
- *	Originally written by Rick Lubbers
- *	Special thanks to Lucb1e (I stole some code from the old parser) and to any other person who helped me code this.
- *
- *	------------
- *	Known bugs
- *	- None so far (report on GitHub)
- *
- *	------------
- *	Changelog
- *	2013-03-07: Added the 'milestone up'-icon
- *	2013-03-07: Probably fixed the just-left-rank-up bug. Testing tomorrow.
- *	2013-03-26: Thanks to Ericlegomeer for giving me the solution to the multiple-guys-have-highest-pulse-but-do-not-show-up-in-blue-bug.
- *	2013-08-17: Removed SQL-query from loop, so the loadtime improved a lot (approx. 26s to 800ms)
- * 	2013-10-29: Added [nobbc] tags around usernames, so users can't use bbcode or smileys anymore.
- *	2014-03-03: Fixed bug that caused new users not to be shown on the first day
- *	2014-06-?: Rank displaymode has been changed so the numbers are in a more logical order at the milestones.
- *	2014-06-09: turned off E_NOTICE error reports
- *	2014-08-18: fixed bug where someone that rejoins the team would fuck up the rankings. Oh, and added a welcome back text.
- *	2014-09-14: Rewritten by Jochem Kuijpers hopefully fixing the savers (spaarders) bug and making the code more easily maintanable. Load time is about 270ms now.
+ *	Source, contributors, changelog and issues:
+ *  - https://github.com/goldenice/GMOT-Whatpulse-Parser
  */
-
+# display as plain text
+header('Content-Type: text/plain');
 # Defines
 define('ROOT',              dirname(__FILE__));
 define('ENDL',              "\r\n");
 define('SECONDS_PER_DAY',   86400);
-
 # Load configuration
 require_once('config.php');
-
+require_once('functions.php');
+# get script hash (for mirror check)
+if (isset($_GET['hash'])) {
+    die(sha1Newline(file_get_contents(__FILE__)));
+}
 # PHP and content settings
-$starttime      = microtime(true);
+$starttime = microtime(true);
 if (DEVMODE || isset($_GET['devmode'])) {
     ini_set('display_errors',1);
     ini_set('display_startup_errors',1);
     error_reporting(-1);
     set_time_limit(60);
 } else {
-    
     // don't let non-devs use PHP < 5.4
     if (version_compare(PHP_VERSION, '5.4.0', '<')) {
         die('You need at least PHP 5.4 to run this script.' . ENDL . ENDL . 'Time to upgrade! :)');
@@ -50,9 +34,6 @@ if (DEVMODE || isset($_GET['devmode'])) {
     error_reporting(0);
     set_time_limit(10);
 }
-
-header('Content-Type: text/plain');
-
 # Automatic Class Loader
 function autoClassLoader($class) {
     $path = ROOT . '/classes/'.$class.'.class.php';
@@ -62,28 +43,23 @@ function autoClassLoader($class) {
         die('class ' . $class . ' @ ' . $path . ' not found');
     }
 }
-
 spl_autoload_register('autoClassLoader');
-
 # Database Connection
 $db = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
 if ($db->connect_errno) {
     die('MySQL verbinding mislukt: ' . $db->connect_error);
 }
-
 # Script Settings
 $teamtag 		= '[GMOT]'; // important for removing the team tag from the username.
-$scripturls		= array(
-    'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodegenerator.php',
+$sourceUrl      = 'https://raw.githubusercontent.com/goldenice/GMOT-Whatpulse-Parser/master/bbcodegenerator.php';
+$scriptUrls		= array(
+    'https://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodegenerator.php',
     'http://jochemkuijpers.nl/etc/gmot/whatpulsestats/bbcodegenerator.php',
-    'http://private.woutervdb.com/php/gmotwpstats/bbcodegenerator.php'
-    
+    'http://private.woutervdb.com/php/gmotwpstats/bbcodegenerator.php',
+    'http://squll.io/gmot-wp/bbcodegenerator.php'
 );
 // $basedir 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new';
 $rank_up_png    = 'http://is.gd/6aftPs';
-
-
-
 # --------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------
@@ -96,9 +72,15 @@ $rank_up_png    = 'http://is.gd/6aftPs';
 # --------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------
-
-
-
+// warning when developer mode is enabled 	
+if (DEVMODE || isset($_GET['devmode'])) { 	 	
+    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL; 	
+    echo '!!               DEVELOPER MODE IS ENABLED               !!' . ENDL; 	
+    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL;
+    echo '!!    OUTPUT MAY CONTAIN DEVELOPER DEBUG INFORMATION     !!' . ENDL; 	
+    echo '!!        PHP WARNINGS OR INCORRECT INFORMATION          !!' . ENDL; 	
+    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL . ENDL; 	
+}
 // stat timestamps (from - till)
 $sql = '
 SELECT
@@ -108,12 +90,10 @@ FROM
 ORDER BY
     `timestamp` DESC
 LIMIT 3;';
-
 $result = $db->query($sql);
 $statsDateTill = $result->fetch_row()[0];
 $statsDateFrom = $result->fetch_row()[0];
 $statsDateYesterday = $result->fetch_row()[0];
-
 // userdata
 $sql = '
 SELECT
@@ -123,12 +103,7 @@ SELECT
     today.rank,
     IFNULL(
         yesterday.rank,
-        ( SELECT t.rank
-        FROM 3_updates AS t
-        WHERE t.userid = today.userid
-        AND t.seqnum < today.seqnum
-        ORDER BY t.seqnum DESC
-        LIMIT 1)
+        today.rank
     ) AS `oldrank`,
     today.keys,
     today.clicks,
@@ -160,10 +135,8 @@ ORDER BY
     IFNULL(today.rank, yesterday.rank) ASC;';
     
 $result = $db->query($sql);
-
 $users = array();
 $rankDelta = 0;
-
 while ($userData = $result->fetch_assoc()) {
     
     // Get the amount of days since the last pulse that is not the pulse of today (yesterday.lastpulse)
@@ -193,14 +166,11 @@ while ($userData = $result->fetch_assoc()) {
     }
     
 }
-
 // user that just left have a negative diff (because they had NULL today and a value yesterday)
 // so the math should be correct.. (right?)
 // while we're iterating through the users, also record events (users joining, leaving, etc.)
-
 $events = array();
 $statkeys = array('keys', 'clicks', 'upload', 'download', 'uptime', 'bandwidth');
-
 foreach ($statkeys as $key) {
     $totals[$key] = 0;
     $totals[$key . 'Diff'] = 0;
@@ -209,7 +179,6 @@ foreach ($statkeys as $key) {
 $totals['savers'] = 0;
 $totals['pulsers'] = 0;
 $totals['active'] = 0;
-
 foreach ($users as $user) {
     
     foreach ($statkeys as $key) {
@@ -246,9 +215,19 @@ foreach ($users as $user) {
         }
     }
 }
-
-
-
+// now we're going to check whether or not the mirrors are up to date
+$ownVersion = filemtime(__FILE__);
+$mirrors = array();
+$mirrorValidate = true;
+$sourceStr = readExternalFile($sourceUrl);
+$sourceHash = sha1Newline($sourceStr);
+// if somehow github is down; don't bother validating
+if ($sourceStr === false) {
+    $mirrorValidate = false;
+}
+foreach($scriptUrls as $url) {
+    $mirrors[] = new Mirror($url, $sourceHash);
+}
 # --------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------
@@ -263,20 +242,6 @@ foreach ($users as $user) {
 # --------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------
-
-
-
-// warning when developer mode is enabled 	
-if (DEVMODE || isset($_GET['devmode'])) { 	 	
-    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL; 	
-    echo '!!               DEVELOPER MODE IS ENABLED               !!' . ENDL; 	
-    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL;
-    echo '!!    OUTPUT MAY CONTAIN DEVELOPER DEBUG INFORMATION     !!' . ENDL; 	
-    echo '!!        PHP WARNINGS OR INCORRECT INFORMATION          !!' . ENDL; 	
-    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL . ENDL; 	
-} 	
-
-
 // choose which stat to use in the third column.
 if (date('z', $statsDateTill) % 2 == 0) {
     $thirdStat = 'uptime';
@@ -285,7 +250,6 @@ if (date('z', $statsDateTill) % 2 == 0) {
     $thirdStat = 'bandwidth';
     $thirdStatHeading = 'Bandwidth';
 }
-
 // Milestones
 $milestones = array(
     array('name' => 'Kryptonite', 'keyvalue' => 100000000),
@@ -302,11 +266,9 @@ $milestones = array(
     array('name' => 'Hout',       'keyvalue' =>    100000), 
     array('name' => 'N00b',       'keyvalue' =>        10)
 );
-
 // find first milestone
 $milestoneIndex = 0;
 $milestonePrint = true;
-
 if (count($users) > 0) {
     
     while ($milestones[$milestoneIndex]['keyvalue'] > $users[0]->getRawData('keys') && $milestoneIndex < count($milestones) - 1) {
@@ -317,22 +279,18 @@ if (count($users) > 0) {
     $milestoneIndex = count($milestones) - 1;
     $milestonePrint = false;
 }
-
 // message heading
 echo '[b][size=14pt]Statistieken gegenereerd op ' . Format::DateTime($statsDateTill) . '[/size] ';
 echo '(' . date("H:i:s", $statsDateTill) . ')' . ENDL;
-
 echo 'Geteld vanaf ' . Format::DateTime($statsDateFrom) . ' ' . date('H:i:s', $statsDateFrom) . ENDL . ENDL;
-
 // table heading
 echo '[table][tr][td][b]#[/td][td][b]Gebruikersnaam[/td]';
 echo '[td][b]Keys[/td][td][/td][td][b]Kliks[/td][td][/td]';
 echo '[td][b]' . $thirdStatHeading . '[/td][td][/td][/tr]' . ENDL;
-
 // table rows
 foreach ($users as $user) {
     // do not display users that have left.
-    if (!$user->isActive()) { continue; }
+    if (!$user->isActive() || $user->getRawData('keys') < 10) { continue; }
     
     // determine if we need to print another milestone
     if ($milestoneIndex < count($milestones) - 1) {
@@ -416,7 +374,7 @@ foreach ($users as $user) {
         echo $prefix . '+' . Format::StatNumber($keysDiff);
     }
     
-    echo ' [/td]';
+    echo '[/td]';
     
     
     // 4th column: clicks
@@ -437,7 +395,7 @@ foreach ($users as $user) {
         echo $prefix . '+' . Format::StatNumber($clicksDiff);
     }
     
-    echo ' [/td]';
+    echo '[/td]';
     
     
     // 5th column: third stat
@@ -475,46 +433,33 @@ foreach ($users as $user) {
     
     
 }
-
 echo '[/table]' . ENDL . ENDL;
-
 // end of table
-
 // display events
-
 foreach ($events as $event) {
     echo $event->getString() . ENDL;
 }
-
 if (count($events) > 0) {
     echo ENDL;
 }
-
 // display totals
-
 echo '[b]Totalen[/b]' . ENDL;
 echo '[table]';
-
 echo '[tr][td]Keys [/td]';
 echo '[td]' . Format::StatNumber($totals['keys']) . '[tt]    [/tt][/td]';
 echo '[td]' . (($totals['keysDiff'] > 0)?'[green]+':'[red]-') . Format::StatNumber($totals['keysDiff']) . '[/td][/tr]' . ENDL;
-
 echo '[tr][td]Kliks [/td]';
 echo '[td]' . Format::StatNumber($totals['clicks']) . '[/td]';
 echo '[td]' . (($totals['clicksDiff'] > 0)?'[green]+':'[red]-') . Format::StatNumber($totals['clicksDiff']) . '[/td][/tr]' . ENDL;
-
 echo '[tr][td]Uptime [/td]';
 echo '[td]' . Format::Uptime($totals['uptime']) . '[/td]';
 echo '[td]' . (($totals['uptimeDiff'] > 0)?'[green]+':'[red]-') . Format::Uptime($totals['uptimeDiff']) . '[/td][/tr]' . ENDL;
-
 echo '[tr][td]Download [/td]';
 echo '[td]' . Format::Bandwidth($totals['download']) . '[/td]';
 echo '[td]' . (($totals['downloadDiff'] > 0)?'[green]+':'[red]-') . Format::Bandwidth($totals['downloadDiff']) . '[/td][/tr]' . ENDL;
-
 echo '[tr][td]Upload [/td]';
 echo '[td]' . Format::Bandwidth($totals['upload']) . '[/td]';
 echo '[td]' . (($totals['uploadDiff'] > 0)?'[green]+':'[red]-') . Format::Bandwidth($totals['uploadDiff']) . '[/td][/tr]' . ENDL;
-
 if ($totals['pulsers'] > 0) {
     
     echo '[tr][td]Pulsers[/td][td]' . $totals['pulsers'] . '[/td]';
@@ -524,23 +469,22 @@ if ($totals['pulsers'] > 0) {
     echo '[td][abbr=Percentage van de pulsers]' . round(($totals['savers'] / $totals['pulsers']) * 100, 2).'%[/td][/tr]' . ENDL;
     
 }
-
 echo '[/table]' . ENDL . ENDL;
-
-echo '[url=' . array_shift($scripturls) . ']Deze statistieken[/url]';
-
-$n = 1;
-if (count($scripturls) > 0) {
-    echo '[sup]';
-    while(count($scripturls) > 0) {
-        echo '[[url=' . array_shift($scripturls) . ']mirror ' . $n . '[/url]]';
-        $n += 1;
+$n = 0;
+foreach($mirrors as $mirror) {
+    switch($n) {
+    case 0:
+        echo $mirror->getString('Deze statistieken', $mirrorValidate);
+        break;
+    case 1:
+        echo '[sup]';
+    default:
+        echo '[' . $mirror->getString('mirror ' . $n, $mirrorValidate) . ']';
     }
-    echo '[/sup]';
+    
+    $n += 1;
 }
-
-echo ' ([url=https://github.com/goldenice/GMOT-Whatpulse-Parser]Broncode[/url])' . ENDL . ENDL;
-
+echo '[/sup] ([url=https://github.com/goldenice/GMOT-Whatpulse-Parser]Broncode[/url])' . ENDL . ENDL;
 if (DEVMODE || isset($_GET['devmode']) || isset($_GET['gentime'])) {
     echo 'Generated in ' . ((microtime(true) - $starttime) * 1000) . ' milliseconds.';
 }

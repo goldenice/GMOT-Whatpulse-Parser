@@ -1,20 +1,20 @@
 <?php
-
 /**
  * Static formatting class
  */
-
 class Format {
     
     /**
      * Function to 'disarm' any BBCode formatting in a string.
      */
     static function NoBBC($string) {
-        return '[nobbc]' . str_replace(
-            array('[', ']'),
-            array('(', ')'),
-            $string
-        ) . ' [/nobbc]';
+		$res = "";
+		if (defined('HTML')) {
+			$res =  $string;
+		} else {
+			$res = '[nobbc]' . str_replace(array('[', ']'),array('(', ')'),$string) . ' [/nobbc]';
+		}
+			return  $res;
     }
     
     /**
@@ -56,11 +56,23 @@ class Format {
     static function StatNumber($number) {
         switch($number) {
         case 1337:
-            return '[abbr=1337][b]leet[/b][/abbr]';
+		if (defined('HTML')) {
+            return '<abbr title="1337"><strong>leet</strong></abbr>';
+		} else {
+			return '[abbr=1337][b]leet[/b][/abbr]';
+		}
         case 1787569:
-            return '[abbr=1.787.569 ofwel 1337²][b]leet^2!!![/b][/abbr]';
+		if (defined('HTML')) {
+			return '<abbr title="1.787.569 ofwel 1337 in het kwadraat"><strong>leetleet</strong></abbr>';
+		} else {
+			return '[abbr=1.787.569 ofwel 1337Â²][b]leet^2!!![/b][/abbr]';
+		}
         case 9999999:
-            return '[abbr=Sjongejonge, er kan tegenwoordig geen key meer vanaf hè... De jeugd van tegenwoordig...]9.999.999[/abbr]';
+		if (defined('HTML')) {
+			return '<abbr title="Sjongejonge, er kan tegenwoordig geen key meer vanaf he... De jeugd van tegenwoordig...">9.999.999</abbr>';
+		} else {
+			 return '[abbr=Sjongejonge, er kan tegenwoordig geen key meer vanaf hÃ¨... De jeugd van tegenwoordig...]9.999.999[/abbr]';
+		}
         default:
             return Format::Number($number);
         }

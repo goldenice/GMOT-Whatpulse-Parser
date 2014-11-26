@@ -1,0 +1,25 @@
+body {
+	font-family: 'Open Sans', sans-serif;
+	font-size: 10pt;
+}
+
+#container {
+	margin: 0 auto;
+	width: 75%;
+}
+
+.red {
+	color: #C00;
+}
+
+.green {
+	color: #0A0;
+}
+
+.blue {
+	color: #00C;
+}
+
+.right-align {
+	text-align: right;
+}

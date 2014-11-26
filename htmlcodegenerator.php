@@ -8,6 +8,7 @@
 # display as plain text
 //header('Content-Type: text/plain');
 # Defines
+define('HTML', true);
 define('ROOT',              dirname(__FILE__));
 define('ENDL',              "<br />");
 define('SECONDS_PER_DAY',   86400);
@@ -40,12 +41,12 @@ if (DEVMODE || isset($_GET['devmode'])) {
 }
 # Automatic Class Loader
 function autoClassLoader($class) {
-    $path = ROOT . '/classes/'.$class.'.class.php';
-    if (file_exists($path)) {
-        include($path);
-    } else {
-        die('class ' . $class . ' @ ' . $path . ' not found');
-    }
+    	$path = ROOT . '/classes/'.$class.'.class.php';
+    	if (file_exists($path)) {
+        	include($path);
+    	} else {
+        	die('class ' . $class . ' @ ' . $path . ' not found');
+    	}
 }
 spl_autoload_register('autoClassLoader');
 # Database Connection
@@ -284,9 +285,9 @@ if (count($users) > 0) {
     $milestonePrint = false;
 }
 // message heading
-echo '<h2>Statistieken gegenereerd op ' . Format_HTML::DateTime($statsDateTill) . '</h2> ';
+echo '<h2>Statistieken gegenereerd op ' . Format::DateTime($statsDateTill) . '</h2> ';
 echo '(' . date("H:i:s", $statsDateTill) . ')' . ENDL;
-echo 'Geteld vanaf ' . Format_HTML::DateTime($statsDateFrom) . ' ' . date('H:i:s', $statsDateFrom) . ENDL . ENDL;
+echo 'Geteld vanaf ' . Format::DateTime($statsDateFrom) . ' ' . date('H:i:s', $statsDateFrom) . ENDL . ENDL;
 // table heading
 echo '<table class="table table-hover"><tr><td><strong>#</strong></td><td><strong>Gebruikersnaam</strong></td>';
 //echo '[table][tr][td][b]#[/td][td][b]Gebruikersnaam[/td]';
@@ -311,8 +312,8 @@ foreach ($users as $user) {
     if ($milestonePrint) {
 		echo '<tr><td></td><td><strong>' . $milestones[$milestoneIndex]['name'] . '</strong></td>';
         //echo '[tr][td][/td][td][b]' . $milestones[$milestoneIndex]['name'] . '[/td]';
-        //echo '[td][right][b]' . Format_HTML::Number($milestones[$milestoneIndex]['keyvalue']) . '[/td] [td][/td] [td][/td] [td][/td] [td][/td] [td][/td] [/tr]' . ENDL;
-        echo '<td class=\"right-align\"><strong>' . Format_HTML::Number($milestones[$milestoneIndex]['keyvalue']) . '</td> <td></td> <td></td> <td></td> <td></td> <td></td> </tr>';
+        //echo '[td][right][b]' . Format::Number($milestones[$milestoneIndex]['keyvalue']) . '[/td] [td][/td] [td][/td] [td][/td] [td][/td] [td][/td] [/tr]' . ENDL;
+        echo '<td class=\"right-align\"><strong>' . Format::Number($milestones[$milestoneIndex]['keyvalue']) . '</td> <td></td> <td></td> <td></td> <td></td> <td></td> </tr>';
 		$milestonePrint = false;
     }
     
@@ -329,11 +330,11 @@ foreach ($users as $user) {
     
     // red or green text when rank has changed
     if ($rankDiff < 0) {
-		echo '<span class="green"><abbr title=\"+' . Format_HTML::Number(-$rankDiff) . '\">';
-        //echo '[green][abbr=+' . Format_HTML::Number(-$rankDiff) . ']'; 
+		echo '<span class="green"><abbr title=\"+' . Format::Number(-$rankDiff) . '\">';
+        //echo '[green][abbr=+' . Format::Number(-$rankDiff) . ']'; 
     } elseif ($rankDiff > 0) {
-        echo '<span class="red"><abbr title=\"-' . Format_HTML::Number($rankDiff) . '\">';
-		//echo '[red][abbr=-' . Format_HTML::Number($rankDiff) . ']';
+        echo '<span class="red"><abbr title=\"-' . Format::Number($rankDiff) . '\">';
+		//echo '[red][abbr=-' . Format::Number($rankDiff) . ']';
     }
 	echo $rank . '</abbr></td>';
     //echo $rank . '[/td]';
@@ -363,8 +364,8 @@ foreach ($users as $user) {
     
     // 3rd column: keys
     
-    echo '<td class="right-align">' . Format_HTML::StatNumber($user->getRawData('keys')) . '</td><td>';
-    //echo '[td][right]' . Format_HTML::StatNumber($user->getRawData('keys')) . '[/td][td]';
+    echo '<td class="right-align">' . Format::StatNumber($user->getRawData('keys')) . '</td><td>';
+    //echo '[td][right]' . Format::StatNumber($user->getRawData('keys')) . '[/td][td]';
     
     // keysDiff value
     $keysDiff = $user->getRawData('keysDiff');
@@ -376,10 +377,10 @@ foreach ($users as $user) {
         
         // cannot use StatNumber inside [abbr] tag
         if ($saverdays > 1) {
-			$prefix .= '<abbr title="Verdeeld over ' . Format_HTML::Number($saverdays) . ' dagen, ';
-			$prefix .= 'gemiddeld ' . Format_HTML::Number($keysDiff / $saverdays) . ' keys per dag">';
-            //$prefix .= '[abbr=Verdeeld over ' . Format_HTML::Number($saverdays) . ' dagen, ';
-            //$prefix .= 'gemiddeld ' . Format_HTML::Number($keysDiff / $saverdays) . ' keys per dag]';
+			$prefix .= '<abbr title="Verdeeld over ' . Format::Number($saverdays) . ' dagen, ';
+			$prefix .= 'gemiddeld ' . Format::Number($keysDiff / $saverdays) . ' keys per dag">';
+            //$prefix .= '[abbr=Verdeeld over ' . Format::Number($saverdays) . ' dagen, ';
+            //$prefix .= 'gemiddeld ' . Format::Number($keysDiff / $saverdays) . ' keys per dag]';
         }
         
         if ($keysDiff == $highest['keysDiff']) {
@@ -389,7 +390,7 @@ foreach ($users as $user) {
 			//$prefix .= '[green]';
             $prefix .= ' <span class="green">';
         }
-        echo $prefix . '+' . Format_HTML::StatNumber($keysDiff);
+        echo $prefix . '+' . Format::StatNumber($keysDiff);
     }
     echo '</abbr></span></td>';
     //echo '[/td]';
@@ -397,8 +398,8 @@ foreach ($users as $user) {
     
     // 4th column: clicks
     
-    echo '<td class="right-align">' . Format_HTML::StatNumber($user->getRawData('clicks')) . '</td><td>';
-    //echo '[td][right]' . Format_HTML::StatNumber($user->getRawData('clicks')) . '[/td][td]';
+    echo '<td class="right-align">' . Format::StatNumber($user->getRawData('clicks')) . '</td><td>';
+    //echo '[td][right]' . Format::StatNumber($user->getRawData('clicks')) . '[/td][td]';
     
     // clicksDiff value
     $clicksDiff = $user->getRawData('clicksDiff');
@@ -412,7 +413,7 @@ foreach ($users as $user) {
             //$prefix = ' [green]';
 			$prefix = ' <span class="green">';
         }
-        echo $prefix . '+' . Format_HTML::StatNumber($clicksDiff);
+        echo $prefix . '+' . Format::StatNumber($clicksDiff);
     }
     
     echo '</span></td>';
@@ -424,7 +425,7 @@ foreach ($users as $user) {
     //echo '[td]';
     
     if ($thirdStat == 'uptime') {
-        echo Format_HTML::Uptime($user->getRawData('uptime')) . '</td><td>';
+        echo Format::Uptime($user->getRawData('uptime')) . '</td><td>';
         
         $uptimeDiff = $user->getRawData('uptimeDiff');
         if ($uptimeDiff > 0) {
@@ -433,10 +434,10 @@ foreach ($users as $user) {
             } else {
                 $prefix = ' <span class="green">';
             }
-            echo $prefix . '+' . Format_HTML::Uptime($uptimeDiff);
+            echo $prefix . '+' . Format::Uptime($uptimeDiff);
         }
     } elseif ($thirdStat == 'bandwidth') {
-        echo Format_HTML::Bandwidth($user->getRawData('bandwidth')) . '</td><td>';
+        echo Format::Bandwidth($user->getRawData('bandwidth')) . '</td><td>';
         
         $bandwidthDiff = $user->getRawData('bandwidthDiff');
         if ($bandwidthDiff > 0) {
@@ -445,7 +446,7 @@ foreach ($users as $user) {
             } else {
                 $prefix = ' <span class="green">';
             }
-            echo $prefix . '+' . Format_HTML::Bandwidth($bandwidthDiff);
+            echo $prefix . '+' . Format::Bandwidth($bandwidthDiff);
         }
     }
     
@@ -468,20 +469,20 @@ if (count($events) > 0) {
 echo '[b]Totalen[/b]' . ENDL;
 echo '[table]';
 echo '[tr][td]Keys [/td]';
-echo '[td]' . Format_HTML::StatNumber($totals['keys']) . '[tt]    [/tt][/td]';
-echo '[td]' . (($totals['keysDiff'] > 0)?'[green]+':'[red]-') . Format_HTML::StatNumber($totals['keysDiff']) . '[/td][/tr]' . ENDL;
+echo '[td]' . Format::StatNumber($totals['keys']) . '[tt]    [/tt][/td]';
+echo '[td]' . (($totals['keysDiff'] > 0)?'[green]+':'[red]-') . Format::StatNumber($totals['keysDiff']) . '[/td][/tr]' . ENDL;
 echo '[tr][td]Kliks [/td]';
-echo '[td]' . Format_HTML::StatNumber($totals['clicks']) . '[/td]';
-echo '[td]' . (($totals['clicksDiff'] > 0)?'[green]+':'[red]-') . Format_HTML::StatNumber($totals['clicksDiff']) . '[/td][/tr]' . ENDL;
+echo '[td]' . Format::StatNumber($totals['clicks']) . '[/td]';
+echo '[td]' . (($totals['clicksDiff'] > 0)?'[green]+':'[red]-') . Format::StatNumber($totals['clicksDiff']) . '[/td][/tr]' . ENDL;
 echo '[tr][td]Uptime [/td]';
-echo '[td]' . Format_HTML::Uptime($totals['uptime']) . '[/td]';
-echo '[td]' . (($totals['uptimeDiff'] > 0)?'[green]+':'[red]-') . Format_HTML::Uptime($totals['uptimeDiff']) . '[/td][/tr]' . ENDL;
+echo '[td]' . Format::Uptime($totals['uptime']) . '[/td]';
+echo '[td]' . (($totals['uptimeDiff'] > 0)?'[green]+':'[red]-') . Format::Uptime($totals['uptimeDiff']) . '[/td][/tr]' . ENDL;
 echo '[tr][td]Download [/td]';
-echo '[td]' . Format_HTML::Bandwidth($totals['download']) . '[/td]';
-echo '[td]' . (($totals['downloadDiff'] > 0)?'[green]+':'[red]-') . Format_HTML::Bandwidth($totals['downloadDiff']) . '[/td][/tr]' . ENDL;
+echo '[td]' . Format::Bandwidth($totals['download']) . '[/td]';
+echo '[td]' . (($totals['downloadDiff'] > 0)?'[green]+':'[red]-') . Format::Bandwidth($totals['downloadDiff']) . '[/td][/tr]' . ENDL;
 echo '[tr][td]Upload [/td]';
-echo '[td]' . Format_HTML::Bandwidth($totals['upload']) . '[/td]';
-echo '[td]' . (($totals['uploadDiff'] > 0)?'[green]+':'[red]-') . Format_HTML::Bandwidth($totals['uploadDiff']) . '[/td][/tr]' . ENDL;
+echo '[td]' . Format::Bandwidth($totals['upload']) . '[/td]';
+echo '[td]' . (($totals['uploadDiff'] > 0)?'[green]+':'[red]-') . Format::Bandwidth($totals['uploadDiff']) . '[/td][/tr]' . ENDL;
 if ($totals['pulsers'] > 0) {
     
     echo '[tr][td]Pulsers[/td][td]' . $totals['pulsers'] . '[/td]';

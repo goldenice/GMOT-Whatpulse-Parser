@@ -1,48 +1,45 @@
 <?php
 /*	GMOT BB-code Whatpulse stats parser
  *	Parses stats from the database into BBCode
- *			Version: 1.1
  *
- *  Rewritten by Jochem Kuijpers
- *	Originally written by Rick Lubbers
- *	Special thanks to Lucb1e (I stole some code from the old parser) and to any other person who helped me code this.
- *
- *	------------
- *	Known bugs
- *	- None so far (report on GitHub)
- *
- *	------------
- *	Changelog
- *	2013-03-07: Added the 'milestone up'-icon
- *	2013-03-07: Probably fixed the just-left-rank-up bug. Testing tomorrow.
- *	2013-03-26: Thanks to Ericlegomeer for giving me the solution to the multiple-guys-have-highest-pulse-but-do-not-show-up-in-blue-bug.
- *	2013-08-17: Removed SQL-query from loop, so the loadtime improved a lot (approx. 26s to 800ms)
- * 	2013-10-29: Added [nobbc] tags around usernames, so users can't use bbcode or smileys anymore.
- *	2014-03-03: Fixed bug that caused new users not to be shown on the first day
- *	2014-06-?: Rank displaymode has been changed so the numbers are in a more logical order at the milestones.
- *	2014-06-09: turned off E_NOTICE error reports
- *	2014-08-18: fixed bug where someone that rejoins the team would fuck up the rankings. Oh, and added a welcome back text.
- *	2014-09-14: Rewritten by Jochem Kuijpers hopefully fixing the savers (spaarders) bug and making the code more easily maintanable. Load time is about 270ms now.
+ *	Source, contributors, changelog and issues:
+ *  - https://github.com/goldenice/GMOT-Whatpulse-Parser
  */
 
+# display as plain text
+header('Content-Type: text/plain');
+
 # Defines
-define('ROOT',      dirname(__FILE__));
-define('ENDL',      "\r\n");
-define('DEVMODE',   false);
+define('ROOT',              dirname(__FILE__));
+define('ENDL',              "\r\n");
+define('SECONDS_PER_DAY',   86400);
+
+# Load configuration
+require_once('config.php');
+require_once('functions.php');
+
+# get script hash (for mirror check)
+if (isset($_GET['hash'])) {
+    die(sha1Newline(file_get_contents(__FILE__)));
+}
 
 # PHP and content settings
-$starttime      = microtime(true);
-if (DEVMODE) {
+$starttime = microtime(true);
+
+if (DEVMODE || isset($_GET['devmode'])) {
     ini_set('display_errors',1);
     ini_set('display_startup_errors',1);
     error_reporting(-1);
     set_time_limit(60);
 } else {
+    // don't let non-devs use PHP < 5.4
+    if (version_compare(PHP_VERSION, '5.4.0', '<')) {
+        die('You need at least PHP 5.4 to run this script.' . ENDL . ENDL . 'Time to upgrade! :)');
+    }
+    
     error_reporting(0);
     set_time_limit(10);
 }
-
-header('Content-Type: text/plain');
 
 # Automatic Class Loader
 function autoClassLoader($class) {
@@ -57,13 +54,22 @@ function autoClassLoader($class) {
 spl_autoload_register('autoClassLoader');
 
 # Database Connection
-require_once('db.php');
-$db = new mysqli($dbhost, $dbuser, $dbpass, $dbname, $dbport);
+$db = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
+if ($db->connect_errno) {
+    die('MySQL verbinding mislukt: ' . $db->connect_error);
+}
 
 # Script Settings
 $teamtag 		= '[GMOT]'; // important for removing the team tag from the username.
-$scripturl 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodeparser.php';
-$basedir 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats';
+$sourceUrl      = 'https://raw.githubusercontent.com/goldenice/GMOT-Whatpulse-Parser/master/bbcodegenerator.php';
+$scriptUrls		= array(
+    'https://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodegenerator.php',
+    'http://jochemkuijpers.nl/etc/gmot/whatpulsestats/bbcodegenerator.php',
+    'http://private.woutervdb.com/php/gmotwpstats/bbcodegenerator.php',
+    'http://squll.io/gmot-wp/bbcodegenerator.php'
+);
+// $basedir 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new';
+$rank_up_png    = 'http://is.gd/6aftPs';
 
 
 
@@ -72,60 +78,81 @@ $basedir 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats';
 # --------------------------------------------------------------------------------------------------------------------
 # Let's start by gathering information!
 #
-# 1. select all (per-user) data we need to build the scoreboard
-# 2. calculate totals and rank offsets
-# 3. determine which users have joined/left/returned
-# 4. gather some global stats
+# 1. gather some global stats
+# 2. select all (per-user) data we need to build the scoreboard
+# 3. calculate totals and rank offsets
+# 4. determine which users have joined/left/returned
 # --------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------
 
 
 
+// warning when developer mode is enabled 	
+if (DEVMODE || isset($_GET['devmode'])) { 	 	
+    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL; 	
+    echo '!!               DEVELOPER MODE IS ENABLED               !!' . ENDL; 	
+    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL;
+    echo '!!    OUTPUT MAY CONTAIN DEVELOPER DEBUG INFORMATION     !!' . ENDL; 	
+    echo '!!        PHP WARNINGS OR INCORRECT INFORMATION          !!' . ENDL; 	
+    echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' . ENDL . ENDL; 	
+}
+
+
+// stat timestamps (from - till)
+$sql = '
+SELECT
+    timestamp
+FROM
+    `3_global`
+ORDER BY
+    `timestamp` DESC
+LIMIT 3;';
+
+$result = $db->query($sql);
+$statsDateTill = $result->fetch_row()[0];
+$statsDateFrom = $result->fetch_row()[0];
+$statsDateYesterday = $result->fetch_row()[0];
+
+// userdata
 $sql = '
 SELECT
     users.username,
     users.status,
     today.userid,
     today.rank,
-    CASE WHEN yesterday.rank IS NOT NULL
-        THEN yesterday.rank
-        ELSE (SELECT COUNT(*) FROM 3_users WHERE status != \'ex-member\')
-    END AS `oldrank`,
+    IFNULL(
+        yesterday.rank,
+        today.rank
+    ) AS `oldrank`,
     today.keys,
     today.clicks,
     today.upload,
     today.download,
     today.uptime,
-    today.keys      - yesterday.keys        AS `keysdiff`,
-    today.clicks    - yesterday.clicks      AS `clicksdiff`,
-    today.upload    - yesterday.upload      AS `uploaddiff`,
-    today.download  - yesterday.download    AS `downloaddiff`,
-    today.uptime    - yesterday.uptime      AS `uptimediff`,
-    CASE WHEN (daybefore.keys = yesterday.keys AND yesterday.keys != today.keys)
-        THEN 1
-        ELSE 0
-    END AS `saver`
+    today.upload + today.download           AS `bandwidth`,
+    today.keys      - yesterday.keys        AS `keysDiff`,
+    today.clicks    - yesterday.clicks      AS `clicksDiff`,
+    today.upload    - yesterday.upload      AS `uploadDiff`,
+    today.download  - yesterday.download    AS `downloadDiff`,
+    today.uptime    - yesterday.uptime      AS `uptimeDiff`,
+    today.download  - yesterday.download +
+    today.upload    - yesterday.upload 	    AS `bandwidthDiff`,
+    yesterday.lastpulse
 FROM
     3_users AS users
 LEFT JOIN 3_updates AS today
     ON today.userid = users.id
-LEFT JOIN 3_updates AS yesterday
-    ON yesterday.userid = today.userid
-    AND yesterday.seqnum = today.seqnum - 1
-LEFT JOIN 3_updates AS daybefore
-    ON daybefore.userid = today.userid
-    AND daybefore.seqnum = today.seqnum - 2
-WHERE
-    users.status != \'ex-member\'
     AND today.seqnum = (SELECT MAX(seqnum) FROM 3_updates)
+LEFT JOIN 3_updates AS yesterday
+    ON yesterday.userid = users.id
+    AND yesterday.seqnum = (SELECT MAX(seqnum) FROM 3_updates) - 1
+WHERE
+    users.status != "ex-member"
 GROUP BY
     users.username
 ORDER BY
-    CASE WHEN today.rank IS NOT NULL 
-        THEN today.rank
-        ELSE yesterday.rank
-    END ASC;';
+    IFNULL(today.rank, yesterday.rank) ASC;';
     
 $result = $db->query($sql);
 
@@ -133,6 +160,12 @@ $users = array();
 $rankDelta = 0;
 
 while ($userData = $result->fetch_assoc()) {
+    
+    // Get the amount of days since the last pulse that is not the pulse of today (yesterday.lastpulse)
+    $userData['saverdays'] = max(0, ceil( ($statsDateFrom - $userData['lastpulse']) / SECONDS_PER_DAY ));
+    // Someone's considdered a saver if yesterday.lastpulse was not yesterday.
+    $userData['saver'] = ($userData['lastpulse'] < $statsDateYesterday);
+    
     
     if ($userData['status'] == 'just-joined' || $userData['status'] == 'returned') {
         
@@ -144,7 +177,7 @@ while ($userData = $result->fetch_assoc()) {
     } else if ($userData['status'] == 'just-left') {
         
         // if the user has been removed from the scoreboard, the rank offset is decreased for the following users.
-        $users[] = new User($userData, $rankData);
+        $users[] = new User($userData, $rankDelta);
         $rankDelta -= 1;
         
     } else {
@@ -153,93 +186,78 @@ while ($userData = $result->fetch_assoc()) {
         $users[] = new User($userData, $rankDelta);
         
     }
+    
 }
 
 // user that just left have a negative diff (because they had NULL today and a value yesterday)
 // so the math should be correct.. (right?)
 // while we're iterating through the users, also record events (users joining, leaving, etc.)
-// and for the savers, find out what the last day was they pulsed!
-
-$sql = '
-SELECT
-    (SELECT MAX(seqnum) FROM 3_updates) - lastupdate.seqnum AS `days`
-FROM
-    3_updates AS lastupdate
-WHERE
-    lastupdate.seqnum < (SELECT MAX(seqnum) FROM 3_updates)
-    AND lastupdate.userid = ?
-ORDER BY
-    lastupdate.seqnum DESC
-LIMIT 1;';
-
-$stmt = $db->prepare($sql);
 
 $events = array();
-$statkeys = array('keys', 'clicks', 'upload', 'download', 'uptime');
+$statkeys = array('keys', 'clicks', 'upload', 'download', 'uptime', 'bandwidth');
 
 foreach ($statkeys as $key) {
     $totals[$key] = 0;
-    $totals[$key . 'diff'] = 0;
-    $highest[$key . 'diff'] = 0;
+    $totals[$key . 'Diff'] = 0;
+    $highest[$key . 'Diff'] = 0;
 }
 $totals['savers'] = 0;
 $totals['pulsers'] = 0;
+$totals['active'] = 0;
 
 foreach ($users as $user) {
     
     foreach ($statkeys as $key) {
         $totals[$key]           += $user->getRawData($key);
-        $totals[$key . 'diff']  += $user->getRawData($key . 'diff');
-        $highest[$key . 'diff'] = max($highest[$key . 'diff'], $user->getRawData($key . 'diff'));
+        $totals[$key . 'Diff']  += $user->getRawData($key . 'Diff');
+        $highest[$key . 'Diff'] = max($highest[$key . 'Diff'], $user->getRawData($key . 'Diff'));
     }
     
     switch($user->getRawData('status')) {
         case 'just-joined':
-            $events[] = new Event($user->getUsername(), 'Welkom %s! :D');
+            $events[] = new Event('Welkom %s! :D', $user);
             break;
         case 'returned':
-            $events[] = new Event($user->getUsername(), 'Welkom terug %s! :D');
+            $events[] = new Event('Welkom terug %s! :D', $user);
             break;
         case 'just-left':
-            $events[] = new Event($user->getUsername(), '%s heeft besloten ons te verlaten :(');
+            $events[] = new Event('%s heeft besloten ons te verlaten :(', $user);
             break;
     }
     
-    // count active users (users who pulsed this day)
-    if ($user->getRawData('keysdiff') > 0 || $user->getRawData('clicksdiff') > 0) {
-        $totals['pulsers'] += 1;
-    }
-    
-    // get saver days if the user is a saver
-    if ($stmt) {
-        if ($user->isSaver()) {
-            $userId = $user->getRawData('userid');
-            $stmt->bind_param('i', $userId);
-            $stmt->execute();
-            $stmt->bind_result($days);
-            if ($stmt->fetch()) {
-                $user->setRawData('saverdays', $days + 1); // +1, also this day
+    // count active users, pulsers and savers
+    if ($user->isActive()) {
+        
+        $totals['active'] += 1;
+        
+        if ($user->hasPulsed()) {
+            
+            $totals['pulsers'] += 1;
+            
+            if ($user->isSaver()) {
+                
+                $totals['savers'] += 1;
             }
-            $totals['savers'] += 1;
         }
     }
 }
 
-$stmt->close();
+// now we're going to check whether or not the mirrors are up to date
+$ownVersion = filemtime(__FILE__);
+$mirrors = array();
+$mirrorValidate = true;
 
-// stat timestamps (from - till)
-$sql = '
-SELECT
-    timestamp
-FROM
-    `3_global`
-ORDER BY
-    `timestamp` DESC
-LIMIT 2;';
+$sourceStr = readExternalFile($sourceUrl);
+$sourceHash = sha1Newline($sourceStr);
 
-$result = $db->query($sql);
-$statsDateTill = $result->fetch_row()[0];
-$statsDateFrom = $result->fetch_row()[0];
+// if somehow github is down; don't bother validating
+if ($sourceStr === false) {
+    $mirrorValidate = false;
+}
+
+foreach($scriptUrls as $url) {
+    $mirrors[] = new Mirror($url, $sourceHash);
+}
 
 
 
@@ -265,8 +283,8 @@ if (date('z', $statsDateTill) % 2 == 0) {
     $thirdStat = 'uptime';
     $thirdStatHeading = 'Uptime';
 } else {
-    $thirdStat = 'network';
-    $thirdStatHeading = '[abbr=Upload]Download';
+    $thirdStat = 'bandwidth';
+    $thirdStatHeading = 'Bandwidth';
 }
 
 // Milestones
@@ -287,16 +305,18 @@ $milestones = array(
 );
 
 // find first milestone
-$milestoneIndex = -1;
+$milestoneIndex = 0;
 $milestonePrint = true;
 
 if (count($users) > 0) {
-    do {
+    
+    while ($milestones[$milestoneIndex]['keyvalue'] > $users[0]->getRawData('keys') && $milestoneIndex < count($milestones) - 1) {
         $milestoneIndex += 1;
-    } while ($milestones[$milestoneIndex]['keyvalue'] > $users[0]->getRawData('keys') && $milestoneIndex < count($milestones) - 1);
+    }
     
 } else {
     $milestoneIndex = count($milestones) - 1;
+    $milestonePrint = false;
 }
 
 // message heading
@@ -306,24 +326,27 @@ echo '(' . date("H:i:s", $statsDateTill) . ')' . ENDL;
 echo 'Geteld vanaf ' . Format::DateTime($statsDateFrom) . ' ' . date('H:i:s', $statsDateFrom) . ENDL . ENDL;
 
 // table heading
-echo '[table][tr][td][b]#[/td][td][b]Gebruikersnaam[/td][td][b]Keys[/td][td][b]Kliks[/td]';
-echo '[td][b]' . $thirdStatHeading . '[/td][/tr]' . ENDL;
+echo '[table][tr][td][b]#[/td][td][b]Gebruikersnaam[/td]';
+echo '[td][b]Keys[/td][td][/td][td][b]Kliks[/td][td][/td]';
+echo '[td][b]' . $thirdStatHeading . '[/td][td][/td][/tr]' . ENDL;
 
 // table rows
 foreach ($users as $user) {
     // do not display users that have left.
-    if (!$user->isActive()) { continue; }
+    if (!$user->isActive() || $user->getRawData('keys') < 10) { continue; }
     
     // determine if we need to print another milestone
-    if ($milestones[$milestoneIndex]['keyvalue'] > $user->getRawData('keys') && $milestoneIndex < count($milestones) - 1) {
-        $milestoneIndex += 1;
-        $milestonePrint = true;
+    if ($milestoneIndex < count($milestones) - 1) {
+        while ($milestones[$milestoneIndex]['keyvalue'] > $user->getRawData('keys') && $milestoneIndex < count($milestones) - 1) {
+            $milestoneIndex += 1;
+            $milestonePrint = true;
+        }
     }
     
     // print a milestone if we have to
     if ($milestonePrint) {
         echo '[tr][td][/td][td][b]' . $milestones[$milestoneIndex]['name'] . '[/td]';
-        echo '[td][b]' . Format::Number($milestones[$milestoneIndex]['keyvalue']) . '[/td][td][/td][td][/td][/tr]' . ENDL;
+        echo '[td][right][b]' . Format::Number($milestones[$milestoneIndex]['keyvalue']) . '[/td][td][/td][td][/td][td][/td][td][/td][td][/td][/tr]' . ENDL;
         $milestonePrint = false;
     }
     
@@ -336,13 +359,13 @@ foreach ($users as $user) {
     echo '[tr][td]';
     
     $rank = $user->getRawData('rank');
-    $rankdiff = $user->getRankDiff();
+    $rankDiff = $user->getRankDiff();
     
     // red or green text when rank has changed
-    if ($rankdiff > 0) {
-        echo '[green][abbr=+' . Format::Number($rankdiff) . ']'; 
-    } elseif ($rankdiff < 0) {
-        echo '[red][abbr=' . Format::Number($rankdiff) . ']';
+    if ($rankDiff < 0) {
+        echo '[green][abbr=+' . Format::Number(-$rankDiff) . ']'; 
+    } elseif ($rankDiff > 0) {
+        echo '[red][abbr=-' . Format::Number($rankDiff) . ']';
     }
     echo $rank . '[/td]';
     
@@ -352,10 +375,10 @@ foreach ($users as $user) {
     
     echo '[td]';
     
-    // show rank up symbol if keys - keysdiff is smaller than the next milestone.
-    if ($milestoneIndex < count($milestones) - 2) {
-        if ($user->getRawData('keys') - $user->getRawData('keysdiff') < $milestones[$milestoneIndex + 1]['keyvalue']) {
-            echo '[img]' . $basedir . '/rank_up.png[/img]';
+    // show rank up symbol if keys - keysDiff is smaller than the next milestone.
+    if ($milestoneIndex < count($milestones) - 1) {
+        if ($user->getRawData('keys') - $user->getRawData('keysDiff') < $milestones[$milestoneIndex]['keyvalue']) {
+            echo '[img]' . $rank_up_png . '[/img] ';
         }
     }
     
@@ -370,51 +393,52 @@ foreach ($users as $user) {
     // 3rd column: keys
     
     
-    echo '[td]' . Format::StatNumber($user->getRawData('keys'));
+    echo '[td][right]' . Format::StatNumber($user->getRawData('keys')) . '[/td][td]';
     
-    // keysdiff value
-    $keysdiff = $user->getRawData('keysdiff');
+    // keysDiff value
+    $keysDiff = $user->getRawData('keysDiff');
     
-    if ($keysdiff > 0) {
+    if ($keysDiff > 0) {
         
         $saverdays = $user->getRawData('saverdays');
         $prefix = '';
         
+        // cannot use StatNumber inside [abbr] tag
         if ($saverdays > 1) {
-            $prefix .= '[abbr=Verdeeld over ' . Format::StatNumber($saverdays) . ' dagen,';
-            $prefix .= 'gemiddeld ' . Format::StatNumber($keysdiff / $saverdays) . ' keys per dag]';
+            $prefix .= '[abbr=Verdeeld over ' . Format::Number($saverdays) . ' dagen, ';
+            $prefix .= 'gemiddeld ' . Format::Number($keysDiff / $saverdays) . ' keys per dag]';
         }
         
-        if ($keysdiff == $highest['keysdiff']) {
+        if ($keysDiff == $highest['keysDiff']) {
             $prefix .= ' [blue]';
         } else {
             $prefix .= ' [green]';
         }
-        echo $prefix . '+' . Format::StatNumber($keysdiff);
+        echo $prefix . '+' . Format::StatNumber($keysDiff);
     }
     
-    echo ' [/td]';
+    echo '[/td]';
     
     
     // 4th column: clicks
     
     
-    echo '[td]' . Format::StatNumber($user->getRawData('clicks'));
+    echo '[td][right]' . Format::StatNumber($user->getRawData('clicks')) . '[/td][td]';
     
-    // clicksdiff value
-    $clicksdiff = $user->getRawData('clicksdiff');
+    // clicksDiff value
+    $clicksDiff = $user->getRawData('clicksDiff');
     
-    if ($clicksdiff > 0) {
+    if ($clicksDiff > 0) {
         
-        if ($clicksdiff == $highest['clicksdiff']) {
+        if ($clicksDiff == $highest['clicksDiff']) {
             $prefix = ' [blue]';
         } else {
             $prefix = ' [green]';
         }
-        echo $prefix . '+' . Format::StatNumber($clicksdiff);
+        echo $prefix . '+' . Format::StatNumber($clicksDiff);
     }
     
-    echo ' [/td]';
+    echo '[/td]';
     
     
     // 5th column: third stat
@@ -422,35 +446,28 @@ foreach ($users as $user) {
     echo '[td]';
     
     if ($thirdStat == 'uptime') {
-        echo Format::Uptime($user->getRawData('uptime'));
+        echo Format::Uptime($user->getRawData('uptime')) . '[/td][td]';
         
-        $uptimediff = $user->getRawData('uptimediff');
-        if ($uptimediff > 0) {
-            if ($uptimediff == $highest['uptimediff']) {
+        $uptimeDiff = $user->getRawData('uptimeDiff');
+        if ($uptimeDiff > 0) {
+            if ($uptimeDiff == $highest['uptimeDiff']) {
                 $prefix = ' [blue]';
             } else {
                 $prefix = ' [green]';
             }
-            echo $prefix . '+' . Format::Uptime($uptimediff);
+            echo $prefix . '+' . Format::Uptime($uptimeDiff);
         }
-    } elseif ($thirdStat == 'network') {
+    } elseif ($thirdStat == 'bandwidth') {
+        echo Format::Bandwidth($user->getRawData('bandwidth')) . '[/td][td]';
         
-        echo '[abbr=' . Format::Bandwidth($user->getRawData('upload'));
-        $uploaddiff = $user->getRawData('uploaddiff');
-        if ($uploaddiff > 0) {
-            echo ' +' . Format::Bandwidth($uploaddiff);
-        }
-        echo ']';
-        
-        $downloaddiff = $user->getRawData('downloaddiff');
-        if ($downloaddiff > 0) {
-            if ($downloaddiff == $highest['downloaddiff']) {
+        $bandwidthDiff = $user->getRawData('bandwidthDiff');
+        if ($bandwidthDiff > 0) {
+            if ($bandwidthDiff == $highest['bandwidthDiff']) {
                 $prefix = ' [blue]';
             } else {
                 $prefix = ' [green]';
             }
-            echo Format::Bandwidth($user->getRawData('download'));
-            echo $prefix . '+' . $downloaddiff;
+            echo $prefix . '+' . Format::Bandwidth($bandwidthDiff);
         }
     }
     
@@ -467,7 +484,11 @@ echo '[/table]' . ENDL . ENDL;
 // display events
 
 foreach ($events as $event) {
-    echo $event->toString() . ENDL;
+    echo $event->getString() . ENDL;
+}
+
+if (count($events) > 0) {
+    echo ENDL;
 }
 
 // display totals
@@ -476,39 +497,54 @@ echo '[b]Totalen[/b]' . ENDL;
 echo '[table]';
 
 echo '[tr][td]Keys [/td]';
-echo '[td]' . Format::StatNumber($totals['keys']) . ' [/td]';
-echo '[td]' . (($totals['keysdiff'] > 0)?'[green]+':'[red]-') . Format::StatNumber($totals['keysdiff']) . '[/td][/tr]' . ENDL;
+echo '[td]' . Format::StatNumber($totals['keys']) . '[tt]    [/tt][/td]';
+echo '[td]' . (($totals['keysDiff'] > 0)?'[green]+':'[red]-') . Format::StatNumber($totals['keysDiff']) . '[/td][/tr]' . ENDL;
 
 echo '[tr][td]Kliks [/td]';
-echo '[td]' . Format::StatNumber($totals['clicks']) . ' [/td]';
-echo '[td]' . (($totals['clicksdiff'] > 0)?'[green]+':'[red]-') . Format::StatNumber($totals['clicksdiff']) . '[/td][/tr]' . ENDL;
+echo '[td]' . Format::StatNumber($totals['clicks']) . '[/td]';
+echo '[td]' . (($totals['clicksDiff'] > 0)?'[green]+':'[red]-') . Format::StatNumber($totals['clicksDiff']) . '[/td][/tr]' . ENDL;
 
 echo '[tr][td]Uptime [/td]';
-echo '[td]' . Format::Uptime($totals['uptime']) . ' [/td]';
-echo '[td]' . (($totals['uptimediff'] > 0)?'[green]+':'[red]-') . Format::Uptime($totals['uptimediff']) . '[/td][/tr]' . ENDL;
+echo '[td]' . Format::Uptime($totals['uptime']) . '[/td]';
+echo '[td]' . (($totals['uptimeDiff'] > 0)?'[green]+':'[red]-') . Format::Uptime($totals['uptimeDiff']) . '[/td][/tr]' . ENDL;
 
 echo '[tr][td]Download [/td]';
-echo '[td]' . Format::Bandwidth($totals['download']) . ' [/td]';
-echo '[td]' . (($totals['downloaddiff'] > 0)?'[green]+':'[red]-') . Format::Bandwidth($totals['downloaddiff']) . '[/td][/tr]' . ENDL;
+echo '[td]' . Format::Bandwidth($totals['download']) . '[/td]';
+echo '[td]' . (($totals['downloadDiff'] > 0)?'[green]+':'[red]-') . Format::Bandwidth($totals['downloadDiff']) . '[/td][/tr]' . ENDL;
 
 echo '[tr][td]Upload [/td]';
-echo '[td]' . Format::Bandwidth($totals['upload']) . ' [/td]';
-echo '[td]' . (($totals['uploaddiff'] > 0)?'[green]+':'[red]-') . Format::Bandwidth($totals['uploaddiff']) . '[/td][/tr]' . ENDL;
+echo '[td]' . Format::Bandwidth($totals['upload']) . '[/td]';
+echo '[td]' . (($totals['uploadDiff'] > 0)?'[green]+':'[red]-') . Format::Bandwidth($totals['uploadDiff']) . '[/td][/tr]' . ENDL;
 
 if ($totals['pulsers'] > 0) {
     
-    echo '[tr][td]-[/td][td] [/td][td] [/td][/tr]' . ENDL;
+    echo '[tr][td]Pulsers[/td][td]' . $totals['pulsers'] . '[/td]';
+    echo '[td][abbr=Percentage van alle leden]' . round(($totals['pulsers'] / $totals['active']) * 100, 2).'%[/td][/tr]' . ENDL;
     
-    echo '[tr][td]Spaarders[/td][td]'.$totals['savers'].'[/td]';
-    echo '[td][abbr=' . $totals['savers'] . ' van de ' . (($totals['pulsers'] > 1)?$totals['pulsers'] . ' mensen die pulsten': '1 mens die pulste') . ']';
-    echo round(($totals['savers'] / $totals['pulsers']) * 100, 2).'%[/abbr][/td][/tr]' . ENDL;
+    echo '[tr][td]Spaarders[tt]    [/tt][/td][td]' . $totals['savers'] . '[/td]';
+    echo '[td][abbr=Percentage van de pulsers]' . round(($totals['savers'] / $totals['pulsers']) * 100, 2).'%[/td][/tr]' . ENDL;
     
 }
 
 echo '[/table]' . ENDL . ENDL;
 
-echo '[url=' . $scripturl . ']Deze statistieken[/url] ([url=https://github.com/goldenice/GMOT-Whatpulse-Parser]Broncode[/url])' . ENDL . ENDL;
+$n = 0;
+foreach($mirrors as $mirror) {
+    switch($n) {
+    case 0:
+        echo $mirror->getString('Deze statistieken', $mirrorValidate);
+        break;
+    case 1:
+        echo '[sup]';
+    default:
+        echo '[' . $mirror->getString('mirror ' . $n, $mirrorValidate) . ']';
+    }
+    
+    $n += 1;
+}
 
-if (DEVMODE) {
+echo '[/sup] ([url=https://github.com/goldenice/GMOT-Whatpulse-Parser]Broncode[/url])' . ENDL . ENDL;
+
+if (DEVMODE || isset($_GET['devmode']) || isset($_GET['gentime'])) {
     echo 'Generated in ' . ((microtime(true) - $starttime) * 1000) . ' milliseconds.';
 }

@@ -40,12 +40,13 @@ class Format {
             'juni',
             'juli',
             'augustus',
+            'september',
             'oktober',
             'november',
             'december'
         );
         
-        return $dagen[date('w', $timestamp)] . date(' j ', $timestamp) . $maanden[date('n', $timestamp) - 1] . date(' Y', $timestamp); 
+        return $dagen[date('N', $timestamp) - 1] . date(' j ', $timestamp) . $maanden[date('n', $timestamp) - 1] . date(' Y', $timestamp); 
     }
     
     static function Number($number) {
@@ -167,6 +168,11 @@ class Format {
     }
     
     static function Bandwidth($input) {
+        
+        if ($input == 0) {
+            return '-';
+        }
+        
         $terabyte	= 1024*1024;
         $gigabyte	= 1024;
         $output 	= '';

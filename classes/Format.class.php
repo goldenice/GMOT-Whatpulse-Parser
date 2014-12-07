@@ -5,6 +5,36 @@
  */
 
 class Format {
+    /* 60 * 60 * 24 * 365.25 */
+    const ONE_YEAR = 31557600;
+    
+    /* 60 * 60 * 24 * 31 */
+    const ONE_MONTH = 2678400;
+    
+    /* 60 * 60 * 24 * 7 */
+    const ONE_WEEK = 604800;
+    
+    /* 60 * 60 * 24 */
+    const ONE_DAY = 86400;
+    
+    /* 60 * 60 */
+    const ONE_HOUR = 3600;
+    
+    /* 60 */
+    const ONE_MINUTE = 60;
+    
+    /**
+     * (Uptime) Mute any zeroes. Best to just give an example:
+     * muteZeroes(0, 'y') --> ''
+     * muteZeroes(1, 'y') --> '1y'
+     * etc etc etc.
+     * @param int $number - Number to mute.
+     * @param string $append - String to append when not muted.
+     * @return string
+     */
+    private static function muteZeroes($number, $append) {
+        return ($number > 0) ? ($number . $append) : '';
+    }
     
     /**
      * Function to 'disarm' any BBCode formatting in a string.
@@ -67,104 +97,33 @@ class Format {
     }
     
     static function Uptime($input) {
-        $yearsec 	= 60*60*24*365;
-        $monthsec 	= 60*60*24*31;
-        $weeksec 	= 60*60*24*7;
-        $daysec		= 60*60*24;
-        $hoursec	= 60*60;
-        $minsec		= 60;
-        $output 	= '';
-        $years 	= 0;
-        $months = 0;
-        $weeks 	= 0;
-        $days 	= 0;
-        $hours 	= 0;
-        $mins 	= 0;
-        $types  = 0;
-        while ($input >= $yearsec) {
-            $years++;
-            $input -= $yearsec;
-        }
-        if ($years > 0) {
-            $output .= $years.'y';
-            $types++;
-        }
-        while ($input >= $monthsec) {
-            $months++;
-            $input -= $monthsec;
-        }
-        if ($months > 0 or strlen($output) > 0) {
-            $output .= $months.'m';
-            $types++;
-        }
-        while ($input >= $weeksec) {
-            $weeks++;
-            $input -= $weeksec;
-        }
-        if ($weeks > 0 or strlen($output) > 0) {
-            if ($types >= 2) {
-                if ($input > ($weeksec/2)) {
-                    $weeks++;
+        $output = '';
+        
+        $units = array(
+            self::ONE_YEAR => 'y',
+            self::ONE_MONTH => 'm',
+            self::ONE_WEEK => 'w',
+            self::ONE_DAY => 'd',
+            self::ONE_HOUR => 'h',
+            self::ONE_MINUTE => 'm'
+        );
+        
+        $usedTypes = 0;
+        
+        foreach ($units as $limit => $append) {
+            $muted = self::muteZeroes(floor($input / $limit), $append);
+            
+            if ($muted) {
+                $output .= $muted;
+                $input %= $limit;
+                
+                if (++$usedTypes > 2) {
+                    break;
                 }
             }
-            $output .= $weeks.'w';
-            $types++;
-            if ($types > 2) {
-                return $output;
-            }
         }
-        while ($input >= $daysec) {
-            $days++;
-            $input -= $daysec;
-        }
-        if ($days > 0 or strlen($output) > 0) {
-            if ($types >= 2) {
-                if ($input > ($daysec/2)) {
-                    $days++;
-                }
-            }
-            $output .= $days.'d';
-            $types++;
-            if ($types > 2) {
-                return $output;
-            }
-        }
-        while ($input >= $hoursec) {
-            $hours++;
-            $input -= $hoursec;
-        }
-        if ($hours > 0 or strlen($output) > 0) {
-            if ($types >= 2) {
-                if ($input > ($hoursec/2)) {
-                    $hours++;
-                }
-            }
-            $output .= $hours.'h';
-            $types++;
-            if ($types > 2) {
-                return $output;
-            }
-        }
-        while ($input >= $minsec) {
-            $mins++;
-            $input -= $minsec;
-        }
-        if ($mins > 0 or strlen($output) > 0) {
-            if ($types >= 2) {
-                if ($input > ($minsec/2)) {
-                    $mins++;
-                }
-            }
-            $output .= $mins.'m';
-            $types++;
-            if ($types > 2) {
-                return $output;
-            }
-        }
-        if ($types == 0) {
-            echo '-';
-        }
-        return $output;
+        
+        return $output ? $output : '-';
     }
     
     static function Bandwidth($input) {

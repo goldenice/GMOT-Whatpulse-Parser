@@ -9,3 +9,4 @@ define('DB_PORT', 28);
 define('DB_USER', 'whatpulsestats2');
 define('DB_PASS', 'tT8t8psSsP4UE9ZX');
 define('DB_NAME', 'whatpulsestats');
+

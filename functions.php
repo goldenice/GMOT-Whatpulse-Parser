@@ -8,8 +8,16 @@ function sha1Newline($str) {
 // return file with 1 second timeout or return false
 function readExternalFile($url) {
     $handle = curl_init();
+    
+    $addr = '';
+    if (isset($_SERVER['REMOTE_ADDR'])) {
+        $addr = $_SERVER['REMOTE_ADDR'];
+    } else {
+        $addr = gethostname() . ' (' . gethostbyname(gethostname()) . ')';
+    }
+    
     $headers = array(
-        'User-Agent' => 'GMOT-Whatpulse-Parser/1.0 just for logs (requested by ' . $_SERVER['REMOTE_ADDR'] . ' at ' . time() . ')',
+        'User-Agent' => 'GMOT-Whatpulse-Parser/1.0 just for logs (requested by ' . $addr . ' at ' . time() . ')',
     );
     
     if (DEVMODE || isset($_GET['devmode'])) {

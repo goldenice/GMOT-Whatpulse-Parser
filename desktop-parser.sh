@@ -11,9 +11,9 @@ echo "GMOT WhatPulse Parser - Desktop editie"  > /dev/stderr
 
 # Even checken of we geen domme user hebben.
 PHP=$(which php);
-echo "Controleren of PHP geïnstalleerd is..." > /dev/stderr
+echo "Controleren of PHP geÃ¯nstalleerd is..." > /dev/stderr
 if [[ ! -f "$PHP" ]]; then
-    echo "Het lijkt erop dat PHP niet geïnstalleerd is." > /dev/stderr
+    echo "Het lijkt erop dat PHP niet geÃ¯nstalleerd is." > /dev/stderr
     echo "Meestal helpt het als je het pakket php5-cli installeert." > /dev/stderr
     exit 1
 fi
@@ -30,3 +30,4 @@ echo "Script uitvoeren..." > /dev/stderr
 echo > /dev/stderr
 $PHP $SCRIPT > stats.txt
 echo "Als het goed is staan de statistieken in stats.txt!" > /dev/stderr
+

@@ -19,23 +19,40 @@ class Mirror {
         }
     }
     
-    public function getString($name, $validate) {
-        $str = '[url=' . $this->url . ']%[/url]';
-        if ($validate) {
-            switch ($this->uptodate) {
-            case 1:
-                $str = str_replace('%', '[color=#408040]%[/color]', $str);
-                break;
-            case 0:
-                $str = str_replace('%', '[color=#804040]%[/color]', $str);
-                break;
-            default: // unable to determine for this mirror
-                $str = str_replace('%', '[color=#808080]%[/color]', $str);
-                break;
-            }
-        }
-        $str = str_replace('%', $name, $str);
-        
-        return $str;
-    }
+	public static function getMirrorsBBcode($mirrorList) {
+		$bbcode = ''; // Return variable
+
+		$mirrorCount = 0; // Used in output (for [mirror 1][mirror 2], etc.) and to give special output on the first mirror
+		foreach ($mirrorList as $mirror) {
+			if (DEVMODE) {
+				echo '(Mirror ' . $mirror->url . ' ' . ($mirror->uptodate === 1 ? 'uptodate' : 'outdated/down') . ")\n";
+			}
+
+			if ($mirror->uptodate === 1) {
+				if ($mirrorCount == 0) {
+					$bbcode .= '[url=' . $mirror->url . ']Deze statistieken[/url] [sup]';
+				}
+				else {
+					$bbcode .= '[[url=' . $mirror->url . ']mirror ' . $mirrorCount . '[/url]]';
+				}
+				$mirrorCount += 1;
+			}
+		}
+
+		if (empty($bbcode)) {
+			// Uh-oh. I don't know what is wrong here, but better return all mirrors instead of none.
+			if (DEVMODE) {
+				echo "[b]WARNING:[/b] Something went wrong checking our mirrors. Slow internet perhaps? (The timeout is 1 second.)\n";
+			}
+
+			foreach ($mirrorList as $mirror) {
+				$mirror->uptodate = 1; // Let's just pretend they're all available and re-generate.
+			}
+			$bbcode = Mirror::getMirrorsBBcode($mirrorList);
+		}
+
+		return $bbcode;
+	}
+
 }
+

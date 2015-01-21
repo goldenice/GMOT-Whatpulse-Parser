@@ -66,7 +66,7 @@ $scriptUrls		= array(
     'https://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodegenerator.php',
     'http://jochemkuijpers.nl/etc/gmot/whatpulsestats/bbcodegenerator.php',
     'http://private.woutervdb.com/php/gmotwpstats/bbcodegenerator.php',
-    'http://squll.io/gmot-wp/bbcodegenerator.php'
+    'http://squll.io/dev/gmot/wp/bbcodegenerator.php'
 );
 // $basedir 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new';
 $rank_up_png    = 'http://is.gd/6aftPs';
@@ -258,6 +258,7 @@ if ($sourceStr === false) {
 foreach($scriptUrls as $url) {
     $mirrors[] = new Mirror($url, $sourceHash);
 }
+shuffle($mirrors); // Because all mirrors are created equal.
 
 
 
@@ -528,20 +529,7 @@ if ($totals['pulsers'] > 0) {
 
 echo '[/table]' . ENDL . ENDL;
 
-$n = 0;
-foreach($mirrors as $mirror) {
-    switch($n) {
-    case 0:
-        echo $mirror->getString('Deze statistieken', $mirrorValidate);
-        break;
-    case 1:
-        echo '[sup]';
-    default:
-        echo '[' . $mirror->getString('mirror ' . $n, $mirrorValidate) . ']';
-    }
-    
-    $n += 1;
-}
+echo Mirror::getMirrorsBBcode($mirrors);
 
 echo '[/sup] ([url=https://github.com/goldenice/GMOT-Whatpulse-Parser]Broncode[/url])' . ENDL . ENDL;
 

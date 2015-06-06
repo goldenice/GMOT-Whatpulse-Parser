@@ -99,6 +99,15 @@ if (DEVMODE || isset($_GET['devmode'])) {
 }
 
 
+
+// allow output of previous days to be re-generated:
+$goback = 0;
+if (isset($_GET['goback'])) {
+    if (intval($_GET['goback']) > 0) {
+        $goback = intval($_GET['goback']);
+    }
+}
+
 // stat timestamps (from - till)
 $sql = '
 SELECT
@@ -107,7 +116,8 @@ FROM
     `3_global`
 ORDER BY
     `timestamp` DESC
-LIMIT 3;';
+LIMIT 3
+OFFSET ' . intval($goback) . ';';
 
 $result = $db->query($sql);
 $statsDateTill = $result->fetch_row()[0];
@@ -143,10 +153,9 @@ FROM
     3_users AS users
 LEFT JOIN 3_updates AS today
     ON today.userid = users.id
-    AND today.seqnum = (SELECT MAX(seqnum) FROM 3_updates)
+    AND today.seqnum = (SELECT MAX(seqnum) FROM 3_updates) - ' . intval($goback) . '
 LEFT JOIN 3_updates AS yesterday
     ON yesterday.userid = users.id
-    AND yesterday.seqnum = (SELECT MAX(seqnum) FROM 3_updates) - 1
 WHERE
     users.status != "ex-member"
 GROUP BY
@@ -535,4 +544,5 @@ echo '[/sup] ([url=https://github.com/goldenice/GMOT-Whatpulse-Parser]Broncode[/
 
 if (DEVMODE || isset($_GET['devmode']) || isset($_GET['gentime'])) {
     echo 'Generated in ' . ((microtime(true) - $starttime) * 1000) . ' milliseconds.';
+    echo 'On ' . date('r') . '.';
 }

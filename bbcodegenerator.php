@@ -66,7 +66,8 @@ $scriptUrls		= array(
     'https://rpi.ricklubbers.nl/sandbox/gmotwpstats/new/bbcodegenerator.php',
     'http://jochemkuijpers.nl/etc/gmot/whatpulsestats/bbcodegenerator.php',
     'http://private.woutervdb.com/php/gmotwpstats/bbcodegenerator.php',
-    'http://martinbeentjes.nl/dev/gmot/gmotwpstats/bbcodegenerator.php'
+    'http://martinbeentjes.nl/dev/gmot/gmotwpstats/bbcodegenerator.php',
+    'https://mirkwood.bjarno.be/~bjarno/GMOT-Whatpulse-Parser/bbcodegenerator.php'
 );
 // $basedir 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new';
 $rank_up_png    = 'http://is.gd/6aftPs';

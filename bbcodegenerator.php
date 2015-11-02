@@ -210,6 +210,7 @@ foreach ($statkeys as $key) {
     $totals[$key] = 0;
     $totals[$key . 'Diff'] = 0;
     $highest[$key . 'Diff'] = 0;
+    $highest[$key . 'SavedDiff'] = 0;
 }
 $totals['savers'] = 0;
 $totals['pulsers'] = 0;
@@ -220,7 +221,11 @@ foreach ($users as $user) {
     foreach ($statkeys as $key) {
         $totals[$key]           += $user->getRawData($key);
         $totals[$key . 'Diff']  += $user->getRawData($key . 'Diff');
-        $highest[$key . 'Diff'] = max($highest[$key . 'Diff'], $user->getRawData($key . 'Diff'));
+        if (!$user->isSaver()) {
+            $highest[$key . 'Diff'] = max($highest[$key . 'Diff'], $user->getRawData($key . 'Diff'));
+        } else {
+            $highest[$key . 'SavedDiff'] = max($highest[$key . 'SavedDiff'], $user->getRawData($key . 'Diff'));
+        }
     }
     
     switch($user->getRawData('status')) {
@@ -420,8 +425,10 @@ foreach ($users as $user) {
             $prefix .= 'gemiddeld ' . Format::Number($keysDiff / $saverdays) . ' keys per dag]';
         }
         
-        if ($keysDiff == $highest['keysDiff']) {
+        if (!$user->isSaver() && $keysDiff == $highest['keysDiff']) {
             $prefix .= ' [blue]';
+        } else if ($user->isSaver() && $keysDiff == $highest['keysSavedDiff']) {
+            $prefix .= ' [color=purple]';
         } else {
             $prefix .= ' [green]';
         }
@@ -441,8 +448,10 @@ foreach ($users as $user) {
     
     if ($clicksDiff > 0) {
         
-        if ($clicksDiff == $highest['clicksDiff']) {
+        if (!$user->isSaver() && $clicksDiff == $highest['clicksDiff']) {
             $prefix = ' [blue]';
+        } else if ($user->isSaver() && $clicksDiff == $highest['clicksSavedDiff']) {
+            $prefix = ' [color=purple]';
         } else {
             $prefix = ' [green]';
         }
@@ -461,8 +470,10 @@ foreach ($users as $user) {
         
         $uptimeDiff = $user->getRawData('uptimeDiff');
         if ($uptimeDiff > 0) {
-            if ($uptimeDiff == $highest['uptimeDiff']) {
+            if (!$user->isSaver() && $uptimeDiff == $highest['uptimeDiff']) {
                 $prefix = ' [blue]';
+            } else if ($user->isSaver() && $uptimeDiff == $highest['uptimeSavedDiff']) {
+                $prefix = ' [color=purple]';
             } else {
                 $prefix = ' [green]';
             }
@@ -473,8 +484,10 @@ foreach ($users as $user) {
         
         $bandwidthDiff = $user->getRawData('bandwidthDiff');
         if ($bandwidthDiff > 0) {
-            if ($bandwidthDiff == $highest['bandwidthDiff']) {
+            if (!$user->isSaver() && $bandwidthDiff == $highest['bandwidthDiff']) {
                 $prefix = ' [blue]';
+            } else if ($user->isSaver() && $bandwidthDiff == $highest['bandwidthSavedDiff']) {
+                $prefix = ' [color=purple]';
             } else {
                 $prefix = ' [green]';
             }

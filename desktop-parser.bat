@@ -35,6 +35,6 @@ goto:eof
 :errorNoScript
 echo.
 echo Error^: Kan het script niet vinden!
-echo Error^: Heb je dit script wellict niet in de goede map gezet?
+echo Error^: Heb je dit script wellicht niet in de goede map gezet?
 goto:eof
 

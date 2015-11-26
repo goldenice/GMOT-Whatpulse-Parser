@@ -257,6 +257,13 @@ foreach ($users as $user) {
     }
 }
 
+// ignore maximum saved diff when it's surpassed by the maximum unsaved diff
+foreach ($statkeys as $key) {
+    if ($highest[$key . 'Diff'] > $highest[$key . 'SavedDiff']) {
+        $highest[$key . 'SavedDiff'] = 0;
+    }
+}
+
 // now we're going to check whether or not the mirrors are up to date
 $ownVersion = filemtime(__FILE__);
 $mirrors = array();

@@ -65,7 +65,8 @@ $sourceUrl      = 'https://raw.githubusercontent.com/goldenice/GMOT-Whatpulse-Pa
 $scriptUrls		= array(
     'https://private.woutervdb.com/php/gmotwpstats/bbcodegenerator.php',
     'http://martinbeentjes.nl/dev/gmot/gmotwpstats/bbcodegenerator.php',
-    'https://mirkwood.bjarno.be/~bjarno/GMOT-Whatpulse-Parser/bbcodegenerator.php'
+    'https://mirkwood.bjarno.be/~bjarno/GMOT-Whatpulse-Parser/bbcodegenerator.php',
+    'https://mrten.nl/gmot/whatpulse/bbcodegenerator.php'
 );
 // $basedir 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new';
 $rank_up_png    = 'http://is.gd/6aftPs';

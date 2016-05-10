@@ -14,7 +14,7 @@ class Update {
 		}
 		// Check if GitHub is up, if not, don't bother to update
 		echo "Started auto update\n";
-		$updateFiles = readExternalFile('https://raw.githubusercontent.com/goldenice/GMOT-Whatpulse-Parser/master/updatefiles.txt');
+		$updateFiles = file_get_contents('updatefiles.txt');
 		if ($updateFiles == false)
 		{
 			echo "GitHub is down\nStopping auto update";

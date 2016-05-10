@@ -571,7 +571,7 @@ if (DEVMODE || isset($_GET['devmode']) || isset($_GET['gentime'])) {
     echo 'Generated in ' . ((microtime(true) - $starttime) * 1000) . ' milliseconds.';
     echo 'On ' . date('r') . '.';
 }
-
+/* Uncomment dit voor auto-update
 // Flush buffer to user
 flush();
 ob_flush();

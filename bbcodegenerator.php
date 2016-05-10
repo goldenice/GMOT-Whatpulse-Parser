@@ -62,10 +62,19 @@ if ($db->connect_errno) {
 # Script Settings
 $teamtag 		= '[GMOT]'; // important for removing the team tag from the username.
 $sourceUrl      = 'https://raw.githubusercontent.com/goldenice/GMOT-Whatpulse-Parser/master/bbcodegenerator.php';
-$scriptUrls		= explode("\n", readExternalFile('https://raw.githubusercontent.com/goldenice/GMOT-Whatpulse-Parser/master/mirrors.txt'));
+$scriptUrls		= readExternalFile('https://raw.githubusercontent.com/goldenice/GMOT-Whatpulse-Parser/master/mirrors.txt');
 // $basedir 		= 'http://rpi.ricklubbers.nl/sandbox/gmotwpstats/new';
 $rank_up_png    = 'http://is.gd/6aftPs';
 
+// Check if GitHub is up is up, if not use local file.
+if ($scriptUrls == false)
+{
+	$scriptUrls = explode("\n", file_get_contents('mirrors.txt'));
+}
+else
+{
+	$scriptUrls = explode("\n", $scriptUrls);
+}
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -562,3 +571,11 @@ if (DEVMODE || isset($_GET['devmode']) || isset($_GET['gentime'])) {
     echo 'Generated in ' . ((microtime(true) - $starttime) * 1000) . ' milliseconds.';
     echo 'On ' . date('r') . '.';
 }
+
+// Flush buffer to user
+flush();
+ob_flush();
+function update(){
+	 Update::update();
+};
+bg_process('update',false);

@@ -31,15 +31,32 @@ function readExternalFile($url) {
     curl_setopt($handle, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($handle, CURLOPT_TIMEOUT, 1);
     $response = curl_exec($handle);
+	$responsecode = curl_getinfo($handle, CURLINFO_HTTP_CODE);
+	if($responsecode != 200) {
+        echo '   ... failed (fetch returned error ' . $responsecode . ')' . ENDL . ENDL;
+		return false;
+		curl_close($handle);
+	}
+    if (DEVMODE || isset($_GET['devmode'])) {
+		echo '   ... success (' . strlen($response) . ' characters, ' . round((microtime(true) - $start) * 1000, 2) . 'ms) ' . ENDL . ENDL;
+    }
     curl_close($handle);
     
-    if (DEVMODE || isset($_GET['devmode'])) {
-        if ($response === false) {
-            echo '   ... failed (timeout of 1 second?)' . ENDL . ENDL;
-        } else {
-            echo '   ... success (' . strlen($response) . ' characters, ' . round((microtime(true) - $start) * 1000, 2) . 'ms)' . ENDL . ENDL;
-        }
-    }
-    
     return $response;
+}
+function bg_process($fn, $arr) {
+	if (DEVMODE || isset($_GET['devmode'])) {
+		call_user_func ($fn, $arr);
+	}
+	else
+	{
+		$call = function($fn, $arr){
+			header('Connection: close');
+			header('Content-length: '.ob_get_length());
+			ob_flush();
+			flush();
+			call_user_func_array($fn, $arr);
+			};
+		register_shutdown_function($call, $fn, $arr);
+	}
 }

@@ -1,9 +1,1 @@
-bbcodegenerator.php
-config.php
-functions.php
 mirrors.txt
-classes/Event.class.php
-classes/Format.class.php
-classes/Mirror.class.php
-classes/Update.class.php
-classes/User.class.php

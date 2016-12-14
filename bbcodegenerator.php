@@ -154,6 +154,7 @@ LEFT JOIN 3_updates AS yesterday
     AND yesterday.seqnum = (SELECT MAX(seqnum) FROM 3_updates) - ' . (intval($goback) + 1) . '
 WHERE
     users.status != "ex-member"
+    AND users.status != "just-joined"
 GROUP BY
     users.username
 ORDER BY
